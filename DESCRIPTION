@@ -13,8 +13,13 @@ LinkingTo:
     Rcpp,
     RcppEigen
 Imports: 
-    deSolve,
-    Rcpp
+    checkmate,
+    Rcpp,
+    RcppEigen
 Suggests: 
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    deSolve,
+    epidemics
+Remotes:
+    epiverse-trace/epidemics
 Config/testthat/edition: 3
