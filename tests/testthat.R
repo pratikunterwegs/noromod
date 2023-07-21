@@ -6,7 +6,11 @@
 # * https://r-pkgs.org/tests.html
 # * https://testthat.r-lib.org/reference/test_package.html#special-files
 
+# nolint begin
 library(testthat)
 library(noromod)
+library(epidemics)
+library(deSolve)
+# nolint end
 
 test_check("noromod")
