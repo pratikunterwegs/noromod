@@ -7,7 +7,8 @@
 default_parameters(population)
 }
 \arguments{
-\item{population}{An object of class \verb{<population>} from the \pkg{epidemics}
+\item{population}{An optional argument taking an object of class
+\verb{<population>} from the \pkg{epidemics}. Used to obtain a contact matrix.
 package.}
 }
 \description{

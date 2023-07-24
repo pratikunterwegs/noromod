@@ -3,7 +3,7 @@
 
 #' @title Compartmental model function for a norovirus epidemic
 #' @description A compartmental norovirus model with four age groups. This
-#' function is intended to be passed to the \pkg{deSolve} function [lsoda].
+#' function is intended to be passed to the \pkg{deSolve} function `lsoda`.
 #' @param t Double value for the time.
 #' @param state Vector of the initial state. The form of the vector should be
 #' \eqn{X_i, for X \in S, E, I_s, I_a, R, I_new, I_re}, where values for each
