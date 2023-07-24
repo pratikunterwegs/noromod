@@ -22,5 +22,5 @@ suitable as output for \code{\link[deSolve:lsoda]{deSolve::lsoda()}}.
 }
 \description{
 A compartmental norovirus model with four age groups. This
-function is intended to be passed to the \pkg{deSolve} function \link{lsoda}.
+function is intended to be passed to the \pkg{deSolve} function \code{lsoda}.
 }
