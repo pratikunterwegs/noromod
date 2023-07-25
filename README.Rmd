@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 [![R-CMD-check](https://github.com/pratikunterwegs/noromod/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/pratikunterwegs/noromod/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-The goal of noromod is to ...
+The goal of noromod is to provide a model of age-stratified norovirus transmission.
 
 ## Installation
 
@@ -27,30 +27,60 @@ You can install the development version of noromod from [GitHub](https://github.
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("pratikunterwegs/noromod")
+pak::pak("pratikunterwegs/noromod")
 ```
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
+This is a basic example which shows you how to use the model:
 
 ```{r example}
 library(noromod)
-## basic example code
+library(deSolve)
+library(epidemics) # an Epiverse package
+
+# assume uniform contacts across seven compartments
+polymod <- socialmixr::polymod
+
+uk_pop <- epidemics::population(
+  name = "UK population",
+  contact_matrix = matrix(1, 4, 4),
+  demography_vector = 67e6 * rep(0.25, 4),
+  initial_conditions = matrix(
+    c(1 - 1e-6, 0, 1e-6, 0, 0, 0, 0),
+    nrow = 4, ncol = 7, byrow = TRUE
+  )
+)
+
+uk_pop
+
+# prepare dummy parameters
+params <- default_parameters(uk_pop)
+
+# view parameters
+params
+
+# use the R only model
+data <- as.data.frame(
+  lsoda(
+    y = uk_pop$initial_conditions * uk_pop$demography_vector,
+    times = seq_len(1100),
+    func = norovirus_model_r,
+    parms = params
+  )
+)
+
+head(data)
+
+# use the Rcpp model
+data <- as.data.frame(
+  lsoda(
+    y = uk_pop$initial_conditions * uk_pop$demography_vector,
+    times = seq_len(1100),
+    func = norovirus_model_cpp,
+    parms = params
+  )
+)
+
+head(data)
 ```
-
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
-
-```{r cars}
-summary(cars)
-```
-
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this. You could also use GitHub Actions to re-render `README.Rmd` every time you push. An example workflow can be found here: <https://github.com/r-lib/actions/tree/v1/examples>.
-
-You can also embed plots, for example:
-
-```{r pressure, echo = FALSE}
-plot(pressure)
-```
-
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub and CRAN.
