@@ -6,3 +6,4 @@ scratch.R
 formatcpp.sh
 lintcpp.sh
 .DS_Store
+docs/
