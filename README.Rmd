@@ -40,8 +40,6 @@ library(deSolve)
 library(epidemics) # an Epiverse package
 
 # assume uniform contacts across seven compartments
-polymod <- socialmixr::polymod
-
 uk_pop <- epidemics::population(
   name = "UK population",
   contact_matrix = matrix(1, 4, 4),
