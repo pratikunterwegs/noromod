@@ -12,14 +12,15 @@ test_that("Basic expectations", {
     )
   )
 
+  tstep <- sample(seq(100), 1)
   noromod_r <- norovirus_model_r(
-    t = 1,
+    t = tstep,
     state = uk_pop$initial_conditions * uk_pop$demography_vector,
     default_parameters(population = uk_pop)
   )
 
   noromod_cpp <- norovirus_model_cpp(
-    t = 1,
+    t = tstep,
     state = uk_pop$initial_conditions * uk_pop$demography_vector,
     default_parameters(population = uk_pop)
   )
@@ -42,11 +43,47 @@ test_that("Basic expectations", {
       parms = default_parameters(population = uk_pop)
     )
   )
+
   # expect identical
   expect_identical(
-    noromod_cpp, noromod_r
+    noromod_cpp, noromod_r,
+    tolerance = 1e-6
   )
+
+  # expect values over time are identical
+  expect_identical(
+    deSolve::lsoda(
+      y = uk_pop$initial_conditions * uk_pop$demography_vector,
+      times = times,
+      func = norovirus_model_cpp,
+      parms = default_parameters(population = uk_pop)
+    ),
+    deSolve::lsoda(
+      y = uk_pop$initial_conditions * uk_pop$demography_vector,
+      times = times,
+      func = norovirus_model_r,
+      parms = default_parameters(population = uk_pop)
+    ),
+    tolerance = 1e-6
+  )
+
   expect_vector(
     noromod_cpp, list()
+  )
+
+  # expect snapshots
+  expect_snapshot(
+    norovirus_model_r(
+      t = 100,
+      state = uk_pop$initial_conditions * uk_pop$demography_vector,
+      default_parameters(population = uk_pop)
+    )
+  )
+  expect_snapshot(
+    norovirus_model_cpp(
+      t = 100,
+      state = uk_pop$initial_conditions * uk_pop$demography_vector,
+      default_parameters(population = uk_pop)
+    )
   )
 })
