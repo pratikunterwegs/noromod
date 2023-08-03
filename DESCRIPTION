@@ -23,7 +23,10 @@ Imports:
 Suggests: 
     testthat (>= 3.0.0),
     deSolve,
-    epidemics
+    epidemics,
+    graphics,
+    microbenchmark,
+    socialmixr
 Remotes:
     epiverse-trace/epidemics
 Config/testthat/edition: 3

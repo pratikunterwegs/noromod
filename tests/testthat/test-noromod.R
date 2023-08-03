@@ -87,3 +87,73 @@ test_that("Basic expectations", {
     )
   )
 })
+
+test_that("Model with Boost C++ solvers", {
+  init <- c(
+    3857263, 8103718, 42460865, 12374961,
+    100, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0
+  )
+  init_mat <- matrix(
+    init,
+    nrow = 4, ncol = 7
+  )
+
+  age_groups <- c(0, 5, 15, 65)
+  polymod <- socialmixr::polymod
+  UK_structure <- socialmixr::contact_matrix(
+    polymod,
+    countries = "United Kingdom",
+    age.limits = c(age_groups),
+    symmetric = TRUE
+  )
+
+  # Symmetrical contact matrix
+  uk_contact_rate_matrix <- as.matrix(UK_structure$matrix)
+  demography <- UK_structure$demography$population
+
+  uk_contact_rate_matrix <- t(t(uk_contact_rate_matrix) / demography)
+
+  # add contact matrix to pop
+  params <- list(
+    sigma = 0.714148,
+    rho = 0.06866991,
+    season_amp = 7.446415,
+    season_offset = 0.07817456,
+    D_immun = 6.780921,
+    probT_under5 = 1.828666,
+    probT_over5 = 3.669896,
+    b = (11.4 / 1000) / 365, # birth
+    d = (11.4 / 1000) / 365, # death
+    epsilon = 1, # rate becoming infectious
+    psi = 1 / 2, # rate symptomatic loss
+    gamma = 1 / 10, # rate of recovery / 1/duration of asymptomatic infection
+    n_age_groups = 4
+  )
+  params[["contacts"]] <- uk_contact_rate_matrix
+
+  # run model
+  data <- noromod_cpp_boost(
+    initial_conditions = matrix(init, nrow = 4, ncol = 7),
+    params = params, time_end = 1100, increment = 1
+  )
+
+  # expect output is a list
+  expect_vector(data, list())
+  # expect dataframes
+  data <- output_to_df(data)
+  expect_s3_class(data, "data.frame")
+
+  # expect all numeric and greater than 0
+  expect_true(
+    all(
+      apply(data, 2, function(x) {
+        all(is.numeric(x)) && all(x >= 0)
+      })
+    )
+  )
+})
