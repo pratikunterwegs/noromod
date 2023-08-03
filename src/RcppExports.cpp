@@ -24,9 +24,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// noromod_cpp_boost
+Rcpp::List noromod_cpp_boost(const Eigen::MatrixXd& initial_conditions, const Rcpp::List& params, const double& time_end, const double& increment);
+RcppExport SEXP _noromod_noromod_cpp_boost(SEXP initial_conditionsSEXP, SEXP paramsSEXP, SEXP time_endSEXP, SEXP incrementSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type initial_conditions(initial_conditionsSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type params(paramsSEXP);
+    Rcpp::traits::input_parameter< const double& >::type time_end(time_endSEXP);
+    Rcpp::traits::input_parameter< const double& >::type increment(incrementSEXP);
+    rcpp_result_gen = Rcpp::wrap(noromod_cpp_boost(initial_conditions, params, time_end, increment));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_noromod_norovirus_model_cpp", (DL_FUNC) &_noromod_norovirus_model_cpp, 3},
+    {"_noromod_noromod_cpp_boost", (DL_FUNC) &_noromod_noromod_cpp_boost, 4},
     {NULL, NULL, 0}
 };
 

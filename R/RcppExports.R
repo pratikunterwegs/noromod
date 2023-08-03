@@ -17,3 +17,25 @@ norovirus_model_cpp <- function(t, state, parameters) {
     .Call(`_noromod_norovirus_model_cpp`, t, state, parameters)
 }
 
+#' @title Run an age-structured SEIRS for norovirus
+#'
+#' @param initial_conditions An integer matrix holding the initial conditions
+#' of the simulation. Each column should represent one compartment, in the
+#' order: susceptible, exposed, infectious and symptomatic, infectious and
+#' asymptomatic, and recovered. Two extra columns for re-infections and
+#' new infections are are required.
+#' Rows must represent age groups.
+#' @param params A `list` object with infection parameters.
+#' @param time_end The maximum time, defaults to 200.0.
+#' @param increment The increment time, defaults to 0.1.
+#' @return A two element list, where the first element is a list of matrices
+#' whose elements correspond to the numbers of individuals in each compartment
+#' as specified in the initial conditions matrix.
+#' The second list element is a vector of timesteps.
+#' Pass this to the function `epidemics:::output_to_df()` to get a `data.table`
+#' of simulation results.
+#' @export
+noromod_cpp_boost <- function(initial_conditions, params, time_end = 200.0, increment = 1.0) {
+    .Call(`_noromod_noromod_cpp_boost`, initial_conditions, params, time_end, increment)
+}
+
