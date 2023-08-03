@@ -12,14 +12,14 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // norovirus_model_cpp
-Rcpp::List norovirus_model_cpp(const double& t, Eigen::VectorXd& state, Rcpp::List parameters);
+Rcpp::List norovirus_model_cpp(const double& t, Eigen::VectorXd& state, const Rcpp::List& parameters);
 RcppExport SEXP _noromod_norovirus_model_cpp(SEXP tSEXP, SEXP stateSEXP, SEXP parametersSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const double& >::type t(tSEXP);
     Rcpp::traits::input_parameter< Eigen::VectorXd& >::type state(stateSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type parameters(parametersSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type parameters(parametersSEXP);
     rcpp_result_gen = Rcpp::wrap(norovirus_model_cpp(t, state, parameters));
     return rcpp_result_gen;
 END_RCPP
