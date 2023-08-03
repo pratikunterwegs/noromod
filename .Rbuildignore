@@ -6,3 +6,4 @@
 ^.*\.sh$
 ^scratch\.R$
 ^\.lintr$
+^docs$
