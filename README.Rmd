@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 [![R-CMD-check](https://github.com/pratikunterwegs/noromod/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/pratikunterwegs/noromod/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-The goal of noromod is to provide a model of age-stratified norovirus transmission.
+The goal of noromod is to provide a three implementations of a model of age-stratified norovirus transmission.
 
 ## Installation
 
@@ -32,53 +32,104 @@ pak::pak("pratikunterwegs/noromod")
 
 ## Example
 
-This is a basic example which shows you how to use the model:
+This is a basic example which shows you how to use the three implementations.
+
+Prepare parameters.
 
 ```{r example}
 library(noromod)
 library(deSolve)
-library(epidemics) # an Epiverse package
 
-# assume uniform contacts across seven compartments
-uk_pop <- epidemics::population(
-  name = "UK population",
-  contact_matrix = matrix(1, 4, 4),
-  demography_vector = 67e6 * rep(0.25, 4),
-  initial_conditions = matrix(
-    c(1 - 1e-6, 0, 1e-6, 0, 0, 0, 0),
-    nrow = 4, ncol = 7, byrow = TRUE
-  )
+# define parameters
+# initial conditions
+init <- c(
+  3857263, 8103718, 42460865, 12374961,
+  100, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0
+)
+init_mat <- matrix(
+  init,
+  nrow = 4, ncol = 7
 )
 
-uk_pop
-
-# prepare dummy parameters
-params <- default_parameters(uk_pop)
-
-# view parameters
-params
-
-# use the R only model
-data <- as.data.frame(
-  lsoda(
-    y = uk_pop$initial_conditions * uk_pop$demography_vector,
-    times = seq_len(1100),
-    func = norovirus_model_r,
-    parms = params
-  )
+age_groups <- c(0, 5, 15, 65)
+polymod <- socialmixr::polymod
+UK_structure <- socialmixr::contact_matrix(
+  polymod,
+  countries = "United Kingdom",
+  age.limits = c(age_groups),
+  symmetric = TRUE
 )
 
-head(data)
+# Symmetrical contact matrix
+uk_contact_rate_matrix <- as.matrix(UK_structure$matrix)
+demography <- UK_structure$demography$population
 
-# use the Rcpp model
-data <- as.data.frame(
-  lsoda(
-    y = uk_pop$initial_conditions * uk_pop$demography_vector,
-    times = seq_len(1100),
-    func = norovirus_model_cpp,
-    parms = params
-  )
+uk_contact_rate_matrix <- t(t(uk_contact_rate_matrix) / demography)
+
+# add contact matrix to pop
+params <- list(
+  sigma = 0.714148,
+  rho = 0.06866991,
+  season_amp = 7.446415,
+  season_offset = 0.07817456,
+  D_immun = 6.780921,
+  probT_under5 = 1.828666,
+  probT_over5 = 3.669896,
+  b = (11.4 / 1000) / 365,
+  d = (11.4 / 1000) / 365,
+  epsilon = 1,
+  psi = 1 / 2,
+  gamma = 1 / 10,
+  n_age_groups = 4
+)
+params[["contacts"]] <- uk_contact_rate_matrix
+
+# time points
+times <- seq(11000)
+```
+
+### Using the Rcpp model with deSolve
+
+```{r}
+data <- as.data.frame(deSolve::lsoda(init, times, norovirus_model_cpp, params))
+
+plot(rowSums(data[, seq(6, 9)]), type = "l")
+```
+
+### Using Boost solvers
+
+```{r}
+# Using Boost solvers for increased speed
+# initial conditions are a matrix
+init_matrix <- matrix(init, nrow = 4, ncol = 7)
+
+init_matrix
+
+# run model
+data <- noromod_cpp_boost(
+  initial_conditions = init_matrix,
+  params = params, time_end = 11000, increment = 1
 )
 
-head(data)
+data <- output_to_df(data)
+
+plot(rowSums(data[, seq(5, 8)]), type = "l")
+```
+
+### Speed comparison
+
+```{r}
+microbenchmark::microbenchmark(
+  "noromod_r" = deSolve::lsoda(init, times, norovirus_model_r, params),
+  "noromod_cpp" = deSolve::lsoda(init, times, norovirus_model_cpp, params),
+  "noromod_cpp_boost" = noromod_cpp_boost(
+    initial_conditions = init_mat,
+    params = params, time_end = max(times), increment = 1
+  )
+)
 ```
