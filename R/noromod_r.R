@@ -26,6 +26,7 @@ norovirus_model_r <- function(t, state, parameters) {
   # prepare initial conditions
   n_age_groups <- parameters[["n_age_groups"]]
 
+  # hardcoding the number of columns
   state <- matrix(
     state,
     nrow = n_age_groups, ncol = 7L
@@ -36,7 +37,9 @@ norovirus_model_r <- function(t, state, parameters) {
   infect_asymp <- state[, 4]
   recovered <- state[, 5]
 
-  total_pop <- rowSums(state) # age group wise population
+  # count the total population as the sum of the first five columns
+  # hardcoding the number of epidemiological compartments - S,E,Is,Ia,R
+  total_pop <- rowSums(state[, seq(5)])
 
   # some parameters
   delta <- 1 / (parameters[["D_immun"]] * 365)

@@ -34,11 +34,15 @@ const double seasonal_forcing(const double &t, const double &w1,
 // [[Rcpp::export]]
 Rcpp::List norovirus_model_cpp(const double &t,
                                Eigen::VectorXd &state,  // NOLINT
-                               Rcpp::List parameters) {
-  // handle the initial conditions, which must be rehsaped into a mtrix
+                               const Rcpp::List &parameters) {
+  // handle the initial conditions, which must be rehsaped into a matrix
   // matrix shape hardcoded to be 4 rows and 7 columns
   Eigen::MatrixXd state_matrix =
       Eigen::Map<Eigen::MatrixXd>(state.data(), 4L, 7L);
+
+  // get current population size
+  const Eigen::ArrayXd population_size =
+      state_matrix.block(0, 0, 4, 5).rowwise().sum();
 
   // modify parameters
   const double delta = 1.0 / (Rcpp::as<double>(parameters["D_immun"]) * 365.0);
@@ -78,7 +82,7 @@ Rcpp::List norovirus_model_cpp(const double &t,
       (contacts * (state_matrix.col(2) + (state_matrix.col(3) * rho))).array();
 
   // compartmental transitions
-  Eigen::ArrayXd births = (b * state_matrix.rowwise().sum());
+  Eigen::ArrayXd births = (b * population_size);
   Eigen::ArrayXd rToS = (delta * state_matrix.col(4));
   Eigen::ArrayXd eToIa =
       ((1.0 - sigma) * epsilon) * state_matrix.col(1).array();
