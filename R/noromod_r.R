@@ -57,7 +57,8 @@ norovirus_model_r <- function(t, state, parameters) {
   epsilon <- parameters[["epsilon"]]
   psi <- parameters[["psi"]]
   gamma <- parameters[["gamma"]]
-
+  aging <- parameters[["aging"]]
+  
   # contact matrix
   cm <- parameters[["contacts"]]
 
@@ -69,13 +70,13 @@ norovirus_model_r <- function(t, state, parameters) {
   re_infections <- recovered * infection_potential
 
   dS[1] <- dS[1] + b # Adding births only to the first age group
-  dS <- delta * recovered - new_infections - d * susceptible
+  dS <- delta * recovered - new_infections - d * susceptible + aging %*% susceptible
   dE <- new_infections - epsilon * (1 - sigma) * exposed - epsilon *
-    sigma * exposed - d * exposed
-  dIs <- epsilon * sigma * exposed - psi * infect_symp - d * infect_symp
+    sigma * exposed - d * exposed + aging %*% exposed
+  dIs <- epsilon * sigma * exposed - psi * infect_symp - d * infect_symp + aging %*% infect_symp
   dIa <- epsilon * (1 - sigma) * exposed + psi * infect_symp - gamma *
-    infect_asymp - d * infect_asymp + re_infections
-  dR <- gamma * infect_asymp - delta * recovered - d * recovered - re_infections
+    infect_asymp - d * infect_asymp + re_infections + aging %*% infect_asymp
+  dR <- gamma * infect_asymp - delta * recovered - d * recovered - re_infections + aging %*% recovered
 
   return(list(c(dS, dE, dIs, dIa, dR, re_infections, new_infections)))
 }

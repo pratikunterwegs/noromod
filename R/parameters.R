@@ -5,6 +5,14 @@
 #' package.
 #' @export
 default_parameters <- function(population) {
+  
+  # prepare aging matrix
+  ages <- c(4,14,64,100)
+  da <- diff(c(0,ages))
+  length(ages)
+  aging <- diag(-1/da)
+  aging[row(aging)-col(aging)==1] <- 1/head(da,-1)
+  
   params <- list(
     contacts = matrix(1),
     sigma = 0.72,
@@ -19,7 +27,8 @@ default_parameters <- function(population) {
     epsilon = 1,
     psi = 1 / 2,
     gamma = 1 / 10,
-    n_age_groups = 4
+    n_age_groups = 4,
+    aging = aging / 365
   )
   if (!missing(population)) {
     checkmate::assert_class(population, "population")
