@@ -51,7 +51,7 @@ norovirus_model_r <- function(t, state, parameters) {
 
   # more parameters
   rho <- parameters[["rho"]]
-  b <- parameters[["b"]]
+  b <- parameters[["b"]]*60286751
   d <- parameters[["d"]]
   sigma <- parameters[["sigma"]]
   epsilon <- parameters[["epsilon"]]
@@ -68,7 +68,8 @@ norovirus_model_r <- function(t, state, parameters) {
   new_infections <- susceptible * infection_potential
   re_infections <- recovered * infection_potential
 
-  dS <- b * total_pop + delta * recovered - new_infections - d * susceptible
+  dS[1] <- dS[1] + b # Adding births only to the first age group
+  dS <- delta * recovered - new_infections - d * susceptible
   dE <- new_infections - epsilon * (1 - sigma) * exposed - epsilon *
     sigma * exposed - d * exposed
   dIs <- epsilon * sigma * exposed - psi * infect_symp - d * infect_symp
