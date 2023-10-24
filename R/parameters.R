@@ -12,6 +12,7 @@ default_parameters <- function(population) {
   length(ages)
   aging <- diag(-1/da)
   aging[row(aging)-col(aging)==1] <- 1/head(da,-1)
+  aging[length(ages),length(ages)]<-0 # No ageing in last group - flow out via mortality rate
   
   params <- list(
     contacts = matrix(1),
