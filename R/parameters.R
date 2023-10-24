@@ -7,7 +7,7 @@
 default_parameters <- function(population) {
   
   # prepare aging matrix
-  ages <- c(4,14,64,100)
+  ages <- c(4,14,64,80)
   da <- diff(c(0,ages))
   length(ages)
   aging <- diag(-1/da)
