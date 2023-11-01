@@ -1,19 +1,18 @@
-
 #' @title Useful default parameters
 #' @param population An optional argument taking an object of class
 #' `<population>` from the \pkg{epidemics}. Used to obtain a contact matrix.
 #' package.
 #' @export
 default_parameters <- function(population) {
-  
   # prepare aging matrix
-  ages <- c(4,14,64,80)
-  da <- diff(c(0,ages))
+  ages <- c(4, 14, 64, 80)
+  da <- diff(c(0, ages))
   length(ages)
-  aging <- diag(-1/da)
-  aging[row(aging)-col(aging)==1] <- 1/head(da,-1)
-  aging[length(ages),length(ages)]<-0 # No ageing in last group - flow out via mortality rate
-  
+  aging <- diag(-1 / da)
+  aging[row(aging) - col(aging) == 1] <- 1 / head(da, -1)
+  # No ageing in last group - flow out via mortality rate
+  aging[length(ages), length(ages)] <- 0
+
   params <- list(
     contacts = matrix(1),
     sigma = 0.72,
