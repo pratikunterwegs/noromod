@@ -89,6 +89,17 @@ params <- list(
 )
 params[["contacts"]] <- uk_contact_rate_matrix
 
+params$aging <- matrix(
+  c(
+    c(-0.25, 0.25, 0, 0),
+    c(0, -0.1, 0.1, 0),
+    c(0, 0, -0.02, 0.02),
+    c(0, 0, 0, 0)
+  ),
+  nrow = 4, ncol = 4
+) / 365
+
+
 # time points
 times <- seq(11000)
 ```
@@ -96,7 +107,7 @@ times <- seq(11000)
 ### Using the Rcpp model with deSolve
 
 ```{r}
-data <- as.data.frame(deSolve::lsoda(init, times, norovirus_model_cpp, params))
+data <- as.data.frame(deSolve::lsoda(init, times, norovirus_model_r, params))
 
 plot(rowSums(data[, seq(6, 9)]), type = "l")
 ```
