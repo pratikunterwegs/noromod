@@ -1,4 +1,3 @@
-
 #' @title Seasonal forcing coefficient for the norovirus model
 #' @param t Double value for the time, taken as the ordinal day
 #' @param w1 Double value for the first weighting factor
@@ -51,7 +50,7 @@ norovirus_model_r <- function(t, state, parameters) {
 
   # more parameters
   rho <- parameters[["rho"]]
-  b <- parameters[["b"]] #*60286751
+  b <- parameters[["b"]] #* 60286751
   d <- parameters[["d"]]
   sigma <- parameters[["sigma"]]
   epsilon <- parameters[["epsilon"]]
@@ -69,14 +68,22 @@ norovirus_model_r <- function(t, state, parameters) {
   new_infections <- susceptible * infection_potential
   re_infections <- recovered * infection_potential
 
-  dS[1] <- dS[1] + b * total_pop # Adding births only to the first age group
-  dS <- delta * recovered - new_infections - d * susceptible + aging %*% susceptible
+  # Calculate births for addition only to the first age group
+  # TODO: reconsider how births are calculated. Consider `b * [14 - 65]` only?
+  # TODO: consider adding `b` to ageing matrix as inflow rate?
+  births <- c(b * sum(total_pop), rep(0, n_age_groups - 1))
+
+  # compartmental transitions
+  dS <- births + (delta * recovered) - new_infections - (d * susceptible) +
+    (aging %*% susceptible)
   dE <- new_infections - epsilon * (1 - sigma) * exposed - epsilon *
-    sigma * exposed - d * exposed + aging %*% exposed
-  dIs <- epsilon * sigma * exposed - psi * infect_symp - d * infect_symp + aging %*% infect_symp
+    sigma * exposed - d * exposed + (aging %*% exposed)
+  dIs <- epsilon * sigma * exposed - psi * infect_symp - d * infect_symp +
+    (aging %*% infect_symp)
   dIa <- epsilon * (1 - sigma) * exposed + psi * infect_symp - gamma *
-    infect_asymp - d * infect_asymp + re_infections + aging %*% infect_asymp
-  dR <- gamma * infect_asymp - delta * recovered - d * recovered - re_infections + aging %*% recovered
+    infect_asymp - d * infect_asymp + re_infections + (aging %*% infect_asymp)
+  dR <- gamma * infect_asymp - delta * recovered - d * recovered -
+    re_infections + (aging %*% recovered)
 
   return(list(c(dS, dE, dIs, dIa, dR, re_infections, new_infections)))
 }
