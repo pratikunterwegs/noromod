@@ -56,7 +56,7 @@ UK_structure <- socialmixr::contact_matrix(
   age.limits = c(age_groups),
   symmetric = TRUE
 )
-#> Using POLYMOD social contact data. To cite this in a publication, use the 'cite' function
+#> Using POLYMOD social contact data. To cite this in a publication, use the 'get_citation()' function
 #> Removing participants that have contacts without age information. To change this behaviour, set the 'missing.contact.age' option
 
 # Symmetrical contact matrix
@@ -83,6 +83,17 @@ params <- list(
 )
 params[["contacts"]] <- uk_contact_rate_matrix
 
+params$aging <- matrix(
+  c(
+    c(-0.25, 0.25, 0, 0),
+    c(0, -0.1, 0.1, 0),
+    c(0, 0, -0.02, 0.02),
+    c(0, 0, 0, 0)
+  ),
+  nrow = 4, ncol = 4
+) / 365
+
+
 # time points
 times <- seq(11000)
 ```
@@ -90,7 +101,7 @@ times <- seq(11000)
 ### Using the Rcpp model with deSolve
 
 ``` r
-data <- as.data.frame(deSolve::lsoda(init, times, norovirus_model_cpp, params))
+data <- as.data.frame(deSolve::lsoda(init, times, norovirus_model_r, params))
 
 plot(rowSums(data[, seq(6, 9)]), type = "l")
 ```
@@ -136,12 +147,12 @@ microbenchmark::microbenchmark(
   )
 )
 #> Unit: milliseconds
-#>               expr        min        lq       mean     median         uq
-#>          noromod_r 1522.28587 1709.8222 1961.79194 1932.42598 2144.67261
-#>        noromod_cpp  420.59654  457.9769  558.93900  513.63626  618.42601
-#>  noromod_cpp_boost   65.55168   68.9488   88.38878   76.57985   94.47799
+#>               expr        min         lq      mean     median        uq
+#>          noromod_r 1251.87856 1522.67995 1757.0451 1746.22120 1920.9282
+#>        noromod_cpp  366.37315  446.62543  530.8326  511.36923  579.0844
+#>  noromod_cpp_boost   78.61849   85.67864  100.1993   95.19094  113.0682
 #>        max neval
-#>  3189.8219   100
-#>  1131.4641   100
-#>   297.4174   100
+#>  2827.1653   100
+#>   993.7156   100
+#>   173.7234   100
 ```
