@@ -1,4 +1,3 @@
-
 #' Handle data from the Norovirus Boost model
 #'
 #' @param output An output from the function [noromod_cpp_boost()], which is a
