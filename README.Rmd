@@ -39,7 +39,9 @@ Prepare parameters.
 ```{r example}
 library(noromod)
 library(deSolve)
+```
 
+```{r}
 # define parameters
 # initial conditions
 init <- c(
@@ -98,7 +100,6 @@ params$aging <- matrix(
   ),
   nrow = 4, ncol = 4
 ) / 365
-
 
 # time points
 times <- seq(11000)

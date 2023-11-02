@@ -57,7 +57,7 @@ norovirus_model_r <- function(t, state, parameters) {
   psi <- parameters[["psi"]]
   gamma <- parameters[["gamma"]]
   aging <- parameters[["aging"]]
-  
+
   # contact matrix
   cm <- parameters[["contacts"]]
 
