@@ -135,6 +135,7 @@ test_that("Model with Boost C++ solvers", {
     n_age_groups = 4
   )
   params[["contacts"]] <- uk_contact_rate_matrix
+  params[["aging"]] <- default_parameters()$aging
 
   # run model
   data <- noromod_cpp_boost(
