@@ -31,7 +31,9 @@ Prepare parameters.
 ``` r
 library(noromod)
 library(deSolve)
+```
 
+``` r
 # define parameters
 # initial conditions
 init <- c(
@@ -93,7 +95,6 @@ params$aging <- matrix(
   nrow = 4, ncol = 4
 ) / 365
 
-
 # time points
 times <- seq(11000)
 ```
@@ -106,7 +107,7 @@ data <- as.data.frame(deSolve::lsoda(init, times, norovirus_model_r, params))
 plot(rowSums(data[, seq(6, 9)]), type = "l")
 ```
 
-<img src="man/figures/README-unnamed-chunk-2-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-3-1.png" width="100%" />
 
 ### Using Boost solvers
 
@@ -133,7 +134,7 @@ data <- output_to_df(data)
 plot(rowSums(data[, seq(5, 8)]), type = "l")
 ```
 
-<img src="man/figures/README-unnamed-chunk-3-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-4-1.png" width="100%" />
 
 ### Speed comparison
 
@@ -147,12 +148,12 @@ microbenchmark::microbenchmark(
   )
 )
 #> Unit: milliseconds
-#>               expr        min         lq      mean     median        uq
-#>          noromod_r 1251.87856 1522.67995 1757.0451 1746.22120 1920.9282
-#>        noromod_cpp  366.37315  446.62543  530.8326  511.36923  579.0844
-#>  noromod_cpp_boost   78.61849   85.67864  100.1993   95.19094  113.0682
-#>        max neval
-#>  2827.1653   100
-#>   993.7156   100
-#>   173.7234   100
+#>               expr        min        lq      mean    median        uq       max
+#>          noromod_r 1102.82436 1244.8328 1459.2671 1379.5624 1546.6681 2923.5139
+#>        noromod_cpp  334.51199  391.6205  487.4365  445.7431  541.9825 1502.4086
+#>  noromod_cpp_boost   95.16029  105.7774  127.0213  115.6832  135.5376  298.9251
+#>  neval
+#>    100
+#>    100
+#>    100
 ```
