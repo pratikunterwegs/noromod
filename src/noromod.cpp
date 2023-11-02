@@ -1,11 +1,13 @@
 // Copyright 2023 'epidemics' authors. See repository licence in LICENSE.md.
 
+// clang-format off
 #include <Rcpp.h>
 #include <RcppEigen.h>
 #include <epidemics.h>
 
-#include <boost/numeric/odeint.hpp>
 #include <cmath>
+#include <boost/numeric/odeint.hpp>
+// clang-format on
 
 // [[Rcpp::plugins(cpp14)]]
 // [[Rcpp::depends(RcppEigen)]]
@@ -43,6 +45,9 @@ Rcpp::List norovirus_model_cpp(const double &t,
   // matrix shape hardcoded to be 4 rows and 7 columns
   Eigen::MatrixXd state_matrix =
       Eigen::Map<Eigen::MatrixXd>(state.data(), 4L, 7L);
+
+  // get ageing matrix
+  Eigen::MatrixXd aging = Rcpp::as<Eigen::MatrixXd>(parameters["aging"]);
 
   // get current population size
   const Eigen::ArrayXd population_size =
@@ -86,7 +91,10 @@ Rcpp::List norovirus_model_cpp(const double &t,
       (contacts * (state_matrix.col(2) + (state_matrix.col(3) * rho))).array();
 
   // compartmental transitions
-  Eigen::ArrayXd births = (b * population_size);
+  double births_ = (b * population_size.sum());
+  Eigen::ArrayXd births(4);  // hardcoded for four age groups
+  births << births_, 0.0, 0.0, 0.0;
+
   Eigen::ArrayXd rToS = (delta * state_matrix.col(4));
   Eigen::ArrayXd eToIa =
       ((1.0 - sigma) * epsilon) * state_matrix.col(1).array();
@@ -95,12 +103,17 @@ Rcpp::List norovirus_model_cpp(const double &t,
   Eigen::ArrayXd iaToR = gamma * state_matrix.col(3).array();
 
   // compartmental changes
-  Eigen::ArrayXd dS = births + rToS - sToE - (state_matrix.col(0).array() * d);
-  Eigen::ArrayXd dE = sToE - eToIa - eToIs - (state_matrix.col(1).array() * d);
-  Eigen::ArrayXd dIs = eToIs - isToIa - (state_matrix.col(2).array() * d);
-  Eigen::ArrayXd dIa =
-      eToIa + isToIa + rToIa - iaToR - (state_matrix.col(3).array() * d);
-  Eigen::ArrayXd dR = iaToR - rToS - rToIa - (state_matrix.col(4).array() * d);
+  Eigen::ArrayXd dS = births + rToS - sToE - (state_matrix.col(0).array() * d) +
+                      (aging * state_matrix.col(0)).array();
+  Eigen::ArrayXd dE = sToE - eToIa - eToIs - (state_matrix.col(1).array() * d) +
+                      (aging * state_matrix.col(1)).array();
+  Eigen::ArrayXd dIs = eToIs - isToIa - (state_matrix.col(2).array() * d) +
+                       (aging * state_matrix.col(2)).array();
+  Eigen::ArrayXd dIa = eToIa + isToIa + rToIa - iaToR -
+                       (state_matrix.col(3).array() * d) +
+                       (aging * state_matrix.col(3)).array();
+  Eigen::ArrayXd dR = iaToR - rToS - rToIa - (state_matrix.col(4).array() * d) +
+                      (aging * state_matrix.col(4)).array();
   // must also return re-infections as rToIa, and new infections as sToE
 
   // create return array
@@ -113,7 +126,7 @@ Rcpp::List norovirus_model_cpp(const double &t,
 struct norovirus_model {
   const double rho, b, d, sigma, epsilon, psi, gamma;
   double delta, w1, w2, q1, q2;
-  Eigen::MatrixXd contacts;
+  Eigen::MatrixXd contacts, aging;
   Eigen::ArrayXd param_;
   // npi, interv, pop
   explicit norovirus_model(const Rcpp::List params)
@@ -129,7 +142,8 @@ struct norovirus_model {
         w2(params["season_offset"]),
         q1(params["probT_under5"]),
         q2(params["probT_over5"]),
-        contacts(Rcpp::as<Eigen::MatrixXd>(params["contacts"])) {}
+        contacts(Rcpp::as<Eigen::MatrixXd>(params["contacts"])),
+        aging(Rcpp::as<Eigen::MatrixXd>(params["aging"])) {}
 
   void init_model() {
     // parameters
@@ -140,9 +154,8 @@ struct norovirus_model {
     q2 = q2 / 100.0;
 
     // param vector
-    param_ = Eigen::ArrayXd (4);
+    param_ = Eigen::ArrayXd(4);
     param_ << q1, q2, q2, q2;
-
   }
 
   void operator()(const odetools::state_type &state_matrix,
@@ -160,21 +173,26 @@ struct norovirus_model {
     // column indices: 0:S, 1:E, 2:Is, 3:Ia, 4:R
     // calculate new infections
     Eigen::ArrayXd sToE =
-      param_ * seasonal_term * state_matrix.col(0).array() *
-      (contacts * (state_matrix.col(2) + (state_matrix.col(3) * rho))).array();
+        param_ * seasonal_term * state_matrix.col(0).array() *
+        (contacts * (state_matrix.col(2) + (state_matrix.col(3) * rho)))
+            .array();
 
     // calculate re-infections
     // recovered are column index 4 of the initial conditions
     Eigen::ArrayXd rToIa =
-      param_ * seasonal_term * state_matrix.col(4).array() *
-      (contacts * (state_matrix.col(2) + (state_matrix.col(3) * rho))).array();
+        param_ * seasonal_term * state_matrix.col(4).array() *
+        (contacts * (state_matrix.col(2) + (state_matrix.col(3) * rho)))
+            .array();
 
     // get current population size
     const Eigen::ArrayXd population_size =
         state_matrix.block(0, 0, 4, 5).rowwise().sum();
 
     // compartmental transitions
-    Eigen::ArrayXd births = (b * population_size);
+    double births_ = (b * population_size.sum());
+    Eigen::ArrayXd births(4);  // hardcoded for four age groups
+    births << births_, 0.0, 0.0, 0.0;
+
     Eigen::ArrayXd rToS = (delta * state_matrix.col(4));
     Eigen::ArrayXd eToIa =
         ((1.0 - sigma) * epsilon) * state_matrix.col(1).array();
@@ -183,12 +201,17 @@ struct norovirus_model {
     Eigen::ArrayXd iaToR = gamma * state_matrix.col(3).array();
 
     // compartmental changes accounting for contacts (for dS and dE)
-    dxdt.col(0) = births + rToS - sToE - (state_matrix.col(0).array() * d);
-    dxdt.col(1) = sToE - eToIa - eToIs - (state_matrix.col(1).array() * d);
-    dxdt.col(2) = eToIs - isToIa - (state_matrix.col(2).array() * d);
-    dxdt.col(3) =
-        eToIa + isToIa + rToIa - iaToR - (state_matrix.col(3).array() * d);
-    dxdt.col(4) = iaToR - rToS - rToIa - (state_matrix.col(4).array() * d);
+    dxdt.col(0) = births + rToS - sToE - (state_matrix.col(0).array() * d) +
+                  (aging * state_matrix.col(0)).array();
+    dxdt.col(1) = sToE - eToIa - eToIs - (state_matrix.col(1).array() * d) +
+                  (aging * state_matrix.col(1)).array();
+    dxdt.col(2) = eToIs - isToIa - (state_matrix.col(2).array() * d) +
+                  (aging * state_matrix.col(2)).array();
+    dxdt.col(3) = eToIa + isToIa + rToIa - iaToR -
+                  (state_matrix.col(3).array() * d) +
+                  (aging * state_matrix.col(3)).array();
+    dxdt.col(4) = iaToR - rToS - rToIa - (state_matrix.col(4).array() * d) +
+                  (aging * state_matrix.col(4)).array();
     dxdt.col(5) = rToIa;
     dxdt.col(6) = sToE;
   }
