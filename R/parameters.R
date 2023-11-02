@@ -9,7 +9,7 @@ default_parameters <- function(population) {
   da <- diff(c(0, ages))
   length(ages)
   aging <- diag(-1 / da)
-  aging[row(aging) - col(aging) == 1] <- 1 / head(da, -1)
+  aging[row(aging) - col(aging) == 1] <- 1 / utils::head(da, -1)
   # No ageing in last group - flow out via mortality rate
   aging[length(ages), length(ages)] <- 0
 
