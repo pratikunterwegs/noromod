@@ -19,7 +19,8 @@ LinkingTo:
 Imports: 
     checkmate,
     Rcpp,
-    RcppEigen
+    RcppEigen,
+    utils
 Suggests: 
     testthat (>= 3.0.0),
     deSolve,
