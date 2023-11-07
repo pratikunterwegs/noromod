@@ -68,32 +68,8 @@ demography <- UK_structure$demography$population
 uk_contact_rate_matrix <- t(t(uk_contact_rate_matrix) / demography)
 
 # add contact matrix to pop
-params <- list(
-  sigma = 0.714148,
-  rho = 0.06866991,
-  season_amp = 7.446415,
-  season_offset = 0.07817456,
-  D_immun = 6.780921,
-  probT_under5 = 1.828666,
-  probT_over5 = 3.669896,
-  b = (11.4 / 1000) / 365,
-  d = (11.4 / 1000) / 365,
-  epsilon = 1,
-  psi = 1 / 2,
-  gamma = 1 / 10,
-  n_age_groups = 4
-)
+params <- default_parameters()
 params[["contacts"]] <- uk_contact_rate_matrix
-
-params$aging <- matrix(
-  c(
-    c(-0.25, 0.25, 0, 0),
-    c(0, -0.1, 0.1, 0),
-    c(0, 0, -0.02, 0.02),
-    c(0, 0, 0, 0)
-  ),
-  nrow = 4, ncol = 4
-) / 365
 
 # time points
 times <- seq(11000)
@@ -149,9 +125,9 @@ microbenchmark::microbenchmark(
 )
 #> Unit: milliseconds
 #>               expr        min        lq      mean    median        uq       max
-#>          noromod_r 1102.82436 1244.8328 1459.2671 1379.5624 1546.6681 2923.5139
-#>        noromod_cpp  334.51199  391.6205  487.4365  445.7431  541.9825 1502.4086
-#>  noromod_cpp_boost   95.16029  105.7774  127.0213  115.6832  135.5376  298.9251
+#>          noromod_r 1106.22491 1273.1932 1461.6833 1407.3886 1558.3721 3043.0262
+#>        noromod_cpp  344.15355  390.1537  471.8137  446.4822  498.0411  987.8009
+#>  noromod_cpp_boost   96.78015  105.1210  124.7034  118.1827  134.3833  259.7055
 #>  neval
 #>    100
 #>    100
