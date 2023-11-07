@@ -11,7 +11,6 @@ default_parameters <- function(population) {
   aging <- diag(-1 / da)
   aging[row(aging) - col(aging) == 1] <- 1 / utils::head(da, -1)
   # No ageing in last group - flow out via mortality rate
-  # aging[length(ages), length(ages)] <- 0
 
   params <- list(
     contacts = matrix(1),
@@ -23,7 +22,8 @@ default_parameters <- function(population) {
     probT_under5 = 1.8,
     probT_over5 = 3.6,
     b = (11.4 / 1000) / 365,
-    d = (11.4 / 1000) / 365,
+    # background mortality must be a vector for C++ implementations
+    d = rep((11.4 / 1000) / 365, length(ages)),
     epsilon = 1,
     psi = 1 / 2,
     gamma = 1 / 10,
