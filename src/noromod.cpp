@@ -124,10 +124,12 @@ Rcpp::List norovirus_model_cpp(const double &t,
 }
 
 struct norovirus_model {
-  const double rho, b, sigma, epsilon, psi, gamma;
+  const double rho, b;
+  Eigen::ArrayXd d;
+  const double sigma, epsilon, psi, gamma;
   double delta, w1, w2, q1, q2;
   Eigen::MatrixXd contacts, aging;
-  Eigen::ArrayXd d, param_;
+  Eigen::ArrayXd param_;
   // npi, interv, pop
   explicit norovirus_model(const Rcpp::List params)
       : rho(params["rho"]),
