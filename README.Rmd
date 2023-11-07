@@ -74,32 +74,8 @@ demography <- UK_structure$demography$population
 uk_contact_rate_matrix <- t(t(uk_contact_rate_matrix) / demography)
 
 # add contact matrix to pop
-params <- list(
-  sigma = 0.714148,
-  rho = 0.06866991,
-  season_amp = 7.446415,
-  season_offset = 0.07817456,
-  D_immun = 6.780921,
-  probT_under5 = 1.828666,
-  probT_over5 = 3.669896,
-  b = (11.4 / 1000) / 365,
-  d = (11.4 / 1000) / 365,
-  epsilon = 1,
-  psi = 1 / 2,
-  gamma = 1 / 10,
-  n_age_groups = 4
-)
+params <- default_parameters()
 params[["contacts"]] <- uk_contact_rate_matrix
-
-params$aging <- matrix(
-  c(
-    c(-0.25, 0.25, 0, 0),
-    c(0, -0.1, 0.1, 0),
-    c(0, 0, -0.02, 0.02),
-    c(0, 0, 0, 0)
-  ),
-  nrow = 4, ncol = 4
-) / 365
 
 # time points
 times <- seq(11000)
