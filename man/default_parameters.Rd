@@ -4,7 +4,7 @@
 \alias{default_parameters}
 \title{Useful default parameters}
 \usage{
-default_parameters(population)
+default_parameters(population = NULL)
 }
 \arguments{
 \item{population}{An optional argument taking an object of class
