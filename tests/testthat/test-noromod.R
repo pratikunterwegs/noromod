@@ -118,6 +118,17 @@ test_that("Model with Boost C++ solvers", {
 
   uk_contact_rate_matrix <- t(t(uk_contact_rate_matrix) / demography)
 
+  # seven compartments
+  uk_pop <- epidemics::population(
+    name = "UK population",
+    contact_matrix = uk_contact_rate_matrix,
+    demography_vector = demography,
+    initial_conditions = matrix(
+      c(1 - 1e-6, 0, 1e-6, 0, 0, 0, 0),
+      nrow = 4, ncol = 7, byrow = TRUE
+    )
+  )
+
   # add contact matrix to pop
   params <- default_parameters(uk_pop)
   params[["contacts"]] <- uk_contact_rate_matrix
