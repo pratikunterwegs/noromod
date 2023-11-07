@@ -65,7 +65,7 @@ Rcpp::List norovirus_model_cpp(const double &t,
   // epi parameters
   const double rho = parameters["rho"];
   const double b = parameters["b"];
-  const double d = parameters["d"];
+  const Eigen::ArrayXd d = Rcpp::as<Eigen::ArrayXd>(parameters["d"]);
   const double sigma = parameters["sigma"];
   const double epsilon = parameters["epsilon"];
   const double psi = parameters["psi"];
@@ -124,15 +124,15 @@ Rcpp::List norovirus_model_cpp(const double &t,
 }
 
 struct norovirus_model {
-  const double rho, b, d, sigma, epsilon, psi, gamma;
+  const double rho, b, sigma, epsilon, psi, gamma;
   double delta, w1, w2, q1, q2;
   Eigen::MatrixXd contacts, aging;
-  Eigen::ArrayXd param_;
+  Eigen::ArrayXd d, param_;
   // npi, interv, pop
   explicit norovirus_model(const Rcpp::List params)
       : rho(params["rho"]),
         b(params["b"]),
-        d(params["d"]),
+        d(Rcpp::as<Eigen::ArrayXd>(params["d"])),
         sigma(params["sigma"]),
         epsilon(params["epsilon"]),
         psi(params["psi"]),
