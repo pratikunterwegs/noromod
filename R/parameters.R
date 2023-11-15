@@ -17,10 +17,10 @@ default_parameters <- function(population = NULL) {
     sigma = 0.72,
     rho = 0.070,
     season_amp = 7.45,
-    season_offset = 0.08,
+    season_offset = 0.8,
     D_immun = 6.8,
-    probT_under5 = 1.8,
-    probT_over5 = 3.6,
+    probT_under5 = log(0.18),
+    probT_over5 = log(0.036),
     b = (11.4 / 1000) / 365,
     # background mortality must be a vector for C++ implementations
     # NOTE: this is not age-related mortality

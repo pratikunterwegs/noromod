@@ -43,9 +43,9 @@ norovirus_model_r <- function(t, state, parameters) {
   # some parameters
   delta <- 1 / (parameters[["D_immun"]] * 365)
   w1 <- (parameters[["season_amp"]] / 100)
-  w2 <- (parameters[["season_offset"]] / 10)
-  q1 <- (parameters[["probT_under5"]] / 10)
-  q2 <- (parameters[["probT_over5"]] / 100)
+  w2 <- (parameters[["season_offset"]] / 100)
+  q1 <- exp(parameters[["probT_under5"]])
+  q2 <- exp(parameters[["probT_over5"]])
   q <- c(q1, q2, q2, q2)
 
   # more parameters
