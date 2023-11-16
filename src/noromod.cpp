@@ -56,9 +56,9 @@ Rcpp::List norovirus_model_cpp(const double &t,
   // modify parameters
   const double delta = 1.0 / (Rcpp::as<double>(parameters["D_immun"]) * 365.0);
   const double w1 = Rcpp::as<double>(parameters["season_amp"]) / 100.0;
-  const double w2 = Rcpp::as<double>(parameters["season_offset"]) / 10.0;
-  const double q1 = Rcpp::as<double>(parameters["probT_under5"]) / 10.0;
-  const double q2 = Rcpp::as<double>(parameters["probT_over5"]) / 100.0;
+  const double w2 = Rcpp::as<double>(parameters["season_offset"]) / 100.0;
+  const double q1 = Rcpp::as<double>(exp(parameters["probT_under5"]));
+  const double q2 = Rcpp::as<double>(exp(parameters["probT_over5"]));
   // create contact matrix
   const Eigen::MatrixXd contacts = parameters["contacts"];
 
@@ -151,9 +151,9 @@ struct norovirus_model {
     // parameters
     delta = 1.0 / (delta * 365.0);
     w1 = w1 / 100.0;
-    w2 = w2 / 10.0;
-    q1 = q1 / 10.0;
-    q2 = q2 / 100.0;
+    w2 = w2 / 100.0;
+    q1 = exp(q1);
+    q2 = exp(q2);
 
     // param vector
     param_ = Eigen::ArrayXd(4);
