@@ -43,7 +43,7 @@ norovirus_model_r <- function(t, state, parameters) {
   # some parameters
   delta <- 1 / (parameters[["D_immun"]] * 365)
   w1 <- (parameters[["season_amp"]] / 100)
-  w2 <- (parameters[["season_offset"]] / 100)
+  w2_values <- (parameters[["season_offset"]] / 100)
   q1 <- exp(parameters[["probT_under5"]])
   q2 <- exp(parameters[["probT_over5"]])
   q <- c(q1, q2, q2, q2)
@@ -61,7 +61,14 @@ norovirus_model_r <- function(t, state, parameters) {
   # contact matrix
   cm <- parameters[["contacts"]]
 
-  seasonal_term <- seasonal_forcing(t = t, w1 = w1, w2 = w2)
+  # Specifying w2 values for predefined time intervals
+  w2_intervals <- c(1:8580, 8581:8944, 8945:9315, 9316:9679, 9680:10043, 10044:10407, 10408:10771) 
+  # index of the interval for the current time t
+  current_interval <- which(t >= w2_intervals)[length(which(t >= w2_intervals))]
+  # corresponding w2 value based on the interval
+  current_w2 <- w2_values[min(length(w2_values), current_interval)]
+  
+  seasonal_term <- seasonal_forcing(t = t, w1 = w1, w2 = current_w2)
   infection_potential <- q * seasonal_term * (
     cm %*% (infect_symp + infect_asymp * rho)
   )
