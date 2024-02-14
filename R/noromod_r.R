@@ -61,14 +61,19 @@ norovirus_model_r <- function(t, state, parameters) {
   # contact matrix
   cm <- parameters[["contacts"]]
 
-  # Specifying w2 values for predefined time intervals
-  w2_intervals <- c(1:8580, 8581:8944, 8945:9315, 9316:9679, 9680:10043, 10044:10407, 10408:10771) 
-  # index of the interval for the current time t
-  current_interval <- which(t >= w2_intervals)[length(which(t >= w2_intervals))]
-  # corresponding w2 value based on the interval
-  current_w2 <- w2_values[min(length(w2_values), current_interval)]
-  
-  seasonal_term <- seasonal_forcing(t = t, w1 = w1, w2 = current_w2)
+  # calculate the current w2 using `season_offset_intervals` and `season_offset`
+  # as a lookup table
+  # use Position to search the list of intervals for the index where t is less
+  # than the change point. Note default behaviour of Position() is to return the
+  # first index that satisfies the condition
+  # NOTE: t taken from function scope, this is the simulation time
+  w2_current <- w2_values[
+    Position(
+      f = function(x) t <= x, x = parameters[["season_change_points"]]
+    )
+  ]
+
+  seasonal_term <- seasonal_forcing(t = t, w1 = w1, w2 = w2_current)
   infection_potential <- q * seasonal_term * (
     cm %*% (infect_symp + infect_asymp * rho)
   )
