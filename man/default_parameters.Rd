@@ -4,12 +4,7 @@
 \alias{default_parameters}
 \title{Useful default parameters}
 \usage{
-default_parameters(population = NULL)
-}
-\arguments{
-\item{population}{An optional argument taking an object of class
-\verb{<population>} from the \pkg{epidemics}. Used to obtain a contact matrix.
-package.}
+default_parameters()
 }
 \description{
 Useful default parameters
