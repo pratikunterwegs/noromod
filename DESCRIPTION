@@ -16,15 +16,13 @@ LinkingTo:
     RcppEigen,
     epidemics,
     BH
-Imports: 
-    checkmate,
+Imports:
     Rcpp,
     RcppEigen,
     utils
 Suggests: 
     testthat (>= 3.0.0),
     deSolve,
-    epidemics,
     graphics,
     microbenchmark,
     socialmixr

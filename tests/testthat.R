@@ -9,7 +9,6 @@
 # nolint start
 library(testthat)
 library(noromod)
-library(epidemics)
 library(deSolve)
 # nolint end
 

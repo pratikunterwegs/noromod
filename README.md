@@ -72,13 +72,21 @@ params <- default_parameters()
 params[["contacts"]] <- uk_contact_rate_matrix
 
 # time points
-times <- seq(11000)
+times <- seq(0, 11000)
 ```
 
-### Using the Rcpp model with deSolve
+### Using the R-only model with deSolve
 
 ``` r
 data <- as.data.frame(deSolve::lsoda(init, times, norovirus_model_r, params))
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
 
 plot(rowSums(data[, seq(6, 9)]), type = "l")
 ```
@@ -89,23 +97,13 @@ plot(rowSums(data[, seq(6, 9)]), type = "l")
 
 ``` r
 # Using Boost solvers for increased speed
-# initial conditions are a matrix
-init_matrix <- matrix(init, nrow = 4, ncol = 7)
-
-init_matrix
-#>          [,1] [,2] [,3] [,4] [,5] [,6] [,7]
-#> [1,]  3857263  100    0    0    0    0    0
-#> [2,]  8103718    0    0    0    0    0    0
-#> [3,] 42460865    0    0    0    0    0    0
-#> [4,] 12374961    0    0    0    0    0    0
-
 # run model
 data <- noromod_cpp_boost(
-  initial_conditions = init_matrix,
+  initial_conditions = init_mat,
   params = params, time_end = 11000, increment = 1
 )
 
-data <- output_to_df(data)
+data <- do.call(rbind, lapply(data[["x"]], as.vector))
 
 plot(rowSums(data[, seq(5, 8)]), type = "l")
 ```
@@ -123,11 +121,910 @@ microbenchmark::microbenchmark(
     params = params, time_end = max(times), increment = 1
   )
 )
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
+#> DLSODA-  At T (=R1), too much accuracy requested  
+#>       for precision of machine..  See TOLSF (=R2) 
+#> In above message, R1 = 10771.6, R2 = nan
+#> 
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Excessive
+#> precision requested.  scale up `rtol' and `atol' e.g by the factor 10
+
+#> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
+#> early. Results are accurate, as far as they go
 #> Unit: milliseconds
-#>               expr        min        lq      mean    median        uq      max
-#>          noromod_r 1095.18641 1314.7117 1594.8217 1515.1547 1725.1127 4235.588
-#>        noromod_cpp  349.88032  425.1233  545.0566  499.1362  569.3140 1881.645
-#>  noromod_cpp_boost   98.94077  118.2093  144.9038  131.0310  147.0739  353.709
+#>               expr       min        lq      mean    median        uq       max
+#>          noromod_r 1194.2917 1219.1660 1477.4182 1320.1647 1618.5919 3176.1267
+#>        noromod_cpp  368.0744  389.0028  460.3562  409.3103  494.1639  911.1667
+#>  noromod_cpp_boost  100.5675  105.1794  116.8160  109.0880  118.6181  192.5123
 #>  neval
 #>    100
 #>    100

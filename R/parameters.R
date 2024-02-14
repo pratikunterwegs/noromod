@@ -1,9 +1,6 @@
 #' @title Useful default parameters
-#' @param population An optional argument taking an object of class
-#' `<population>` from the \pkg{epidemics}. Used to obtain a contact matrix.
-#' package.
 #' @export
-default_parameters <- function(population = NULL) {
+default_parameters <- function() {
   # prepare aging matrix
   ages <- c(4, 14, 64, 80)
   da <- diff(c(0, ages))
@@ -17,7 +14,9 @@ default_parameters <- function(population = NULL) {
     sigma = 0.72,
     rho = 0.070,
     season_amp = 7.45,
-    season_offset = 0.8,
+    season_offset = c(0.8, 0.1, 10, 0.8, 0.1, 0.1, 10),
+    # NOTE: only need change points, i.e., final values of each season
+    season_change_points = c(8580, 8944, 9315, 9679, 10043, 10407, 10771),
     D_immun = 6.8,
     probT_under5 = log(0.18),
     probT_over5 = log(0.036),
@@ -31,10 +30,6 @@ default_parameters <- function(population = NULL) {
     n_age_groups = 4,
     aging = aging / 365
   )
-  if (!is.null(population)) {
-    checkmate::assert_class(population, "population")
-    contacts <- population$contact_matrix / population$demography_vector
-    params[["contacts"]] <- contacts
-  }
+
   params
 }

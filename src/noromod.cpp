@@ -56,7 +56,7 @@ Rcpp::List norovirus_model_cpp(const double &t,
   // modify parameters
   const double delta = 1.0 / (Rcpp::as<double>(parameters["D_immun"]) * 365.0);
   const double w1 = Rcpp::as<double>(parameters["season_amp"]) / 100.0;
-  const double w2 = Rcpp::as<double>(parameters["season_offset"]) / 100.0;
+  const Rcpp::NumericVector w2_values = parameters["season_offset"];
   // std::exp operates after conversion to STL double
   const double q1 = std::exp(Rcpp::as<double>(parameters["probT_under5"]));
   const double q2 = std::exp(Rcpp::as<double>(parameters["probT_over5"]));
@@ -72,12 +72,26 @@ Rcpp::List norovirus_model_cpp(const double &t,
   const double psi = parameters["psi"];
   const double gamma = parameters["gamma"];
 
+  // get seasonal change points
+  const Rcpp::NumericVector season_change_points =
+      parameters["season_change_points"];
+
+  // prepare current w2 value
+  double w2_current = 0.0;
+  // expect that intervals sequences are in order
+  for (size_t i = 0; i < season_change_points.size(); i++) {
+    if (t <= season_change_points[i]) {
+      w2_current = w2_values[i] / 100.0;  // division by 100.0 moved here
+      break;                              // exit the loop
+    }
+  }
+
   // prepare array for multiplication
   Eigen::ArrayXd param_(4L);
   param_ << q1, q2, q2, q2;
 
   // prepare seasonal forcing
-  const double seasonal_term = seasonal_forcing(t, w1, w2);
+  const double seasonal_term = seasonal_forcing(t, w1, w2_current);
 
   // column indices: 0:S, 1:E, 2:Is, 3:Ia, 4:R
   // calculate new infections
@@ -128,7 +142,8 @@ struct norovirus_model {
   const double rho, b;
   Eigen::ArrayXd d;
   const double sigma, epsilon, psi, gamma;
-  double delta, w1, w2, q1, q2;
+  double delta, w1, q1, q2;
+  const std::vector<double> w2_values, season_change_points;
   Eigen::MatrixXd contacts, aging;
   Eigen::ArrayXd param_;
   // npi, interv, pop
@@ -142,17 +157,19 @@ struct norovirus_model {
         gamma(params["gamma"]),
         delta(params["D_immun"]),
         w1(params["season_amp"]),
-        w2(params["season_offset"]),
         q1(params["probT_under5"]),
         q2(params["probT_over5"]),
+        w2_values(Rcpp::as<std::vector<double> >(params["season_offset"])),
+        season_change_points(
+            Rcpp::as<std::vector<double> >(params["season_change_points"])),
         contacts(Rcpp::as<Eigen::MatrixXd>(params["contacts"])),
         aging(Rcpp::as<Eigen::MatrixXd>(params["aging"])) {}
 
   void init_model() {
     // parameters
+    // w2 now processed in operator
     delta = 1.0 / (delta * 365.0);
     w1 = w1 / 100.0;
-    w2 = w2 / 100.0;
     q1 = std::exp(q1);
     q2 = std::exp(q2);
 
@@ -167,8 +184,18 @@ struct norovirus_model {
     // resize the dxdt vector to the dimensions of state_matrix
     dxdt.resize(state_matrix.rows(), state_matrix.cols());
 
+    // prepare w2_current, initially first value
+    double w2_current = w2_values[0] / 100.0;
+    // expect that intervals sequences are in order
+    for (size_t i = 0; i < season_change_points.size(); i++) {
+      if (t <= season_change_points[i]) {
+        w2_current = w2_values[i] / 100.0;  // division by 100.0 now here
+        break;                              // exit the loop
+      }
+    }
+
     // prepare seasonal forcing
-    const double seasonal_term = seasonal_forcing(t, w1, w2);
+    const double seasonal_term = seasonal_forcing(t, w1, w2_current);
 
     // NB: Casting initial conditions matrix columns to arrays is necessary
     // for vectorised operations

@@ -78,10 +78,10 @@ params <- default_parameters()
 params[["contacts"]] <- uk_contact_rate_matrix
 
 # time points
-times <- seq(11000)
+times <- seq(0, 11000)
 ```
 
-### Using the Rcpp model with deSolve
+### Using the R-only model with deSolve
 
 ```{r}
 data <- as.data.frame(deSolve::lsoda(init, times, norovirus_model_r, params))
@@ -93,18 +93,13 @@ plot(rowSums(data[, seq(6, 9)]), type = "l")
 
 ```{r}
 # Using Boost solvers for increased speed
-# initial conditions are a matrix
-init_matrix <- matrix(init, nrow = 4, ncol = 7)
-
-init_matrix
-
 # run model
 data <- noromod_cpp_boost(
-  initial_conditions = init_matrix,
+  initial_conditions = init_mat,
   params = params, time_end = 11000, increment = 1
 )
 
-data <- output_to_df(data)
+data <- do.call(rbind, lapply(data[["x"]], as.vector))
 
 plot(rowSums(data[, seq(5, 8)]), type = "l")
 ```
