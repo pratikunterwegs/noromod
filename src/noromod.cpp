@@ -56,7 +56,7 @@ Rcpp::List norovirus_model_cpp(const double &t,
   // modify parameters
   const double delta = 1.0 / (Rcpp::as<double>(parameters["D_immun"]) * 365.0);
   const double w1 = Rcpp::as<double>(parameters["season_amp"]) / 100.0;
-  const double w2 = Rcpp::as<double>(parameters["season_offset"]) / 100.0;
+  const Rcpp::NumericVector w2_values = parameters["season_offset"];
   // std::exp operates after conversion to STL double
   const double q1 = std::exp(Rcpp::as<double>(parameters["probT_under5"]));
   const double q2 = std::exp(Rcpp::as<double>(parameters["probT_over5"]));
@@ -72,12 +72,26 @@ Rcpp::List norovirus_model_cpp(const double &t,
   const double psi = parameters["psi"];
   const double gamma = parameters["gamma"];
 
+  // get seasonal change points
+  const Rcpp::NumericVector season_change_points =
+      parameters["season_change_points"];
+
+  // prepare current w2 value
+  double w2_current = 0.0;
+  // expect that intervals sequences are in order
+  for (size_t i = 0; i < season_change_points.size(); i++) {
+    if (t <= season_change_points[i]) {
+      w2_current = w2_values[i] / 100.0;  // division by 100.0 moved here
+      break;                              // exit the loop
+    }
+  }
+
   // prepare array for multiplication
   Eigen::ArrayXd param_(4L);
   param_ << q1, q2, q2, q2;
 
   // prepare seasonal forcing
-  const double seasonal_term = seasonal_forcing(t, w1, w2);
+  const double seasonal_term = seasonal_forcing(t, w1, w2_current);
 
   // column indices: 0:S, 1:E, 2:Is, 3:Ia, 4:R
   // calculate new infections
