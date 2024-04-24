@@ -58,7 +58,6 @@ UK_structure <- socialmixr::contact_matrix(
   age.limits = c(age_groups),
   symmetric = TRUE
 )
-#> Using POLYMOD social contact data. To cite this in a publication, use the 'get_citation()' function
 #> Removing participants that have contacts without age information. To change this behaviour, set the 'missing.contact.age' option
 
 # Symmetrical contact matrix
@@ -1021,10 +1020,10 @@ microbenchmark::microbenchmark(
 #> Warning in deSolve::lsoda(init, times, norovirus_model_r, params): Returning
 #> early. Results are accurate, as far as they go
 #> Unit: milliseconds
-#>               expr       min        lq      mean    median        uq       max
-#>          noromod_r 1194.2917 1219.1660 1477.4182 1320.1647 1618.5919 3176.1267
-#>        noromod_cpp  368.0744  389.0028  460.3562  409.3103  494.1639  911.1667
-#>  noromod_cpp_boost  100.5675  105.1794  116.8160  109.0880  118.6181  192.5123
+#>               expr        min        lq      mean    median        uq       max
+#>          noromod_r 1188.64930 1236.1780 1333.8733 1283.4355 1358.7774 2554.5153
+#>        noromod_cpp  356.43054  389.9030  435.4173  416.0641  454.5616  814.8951
+#>  noromod_cpp_boost   99.30052  102.4702  115.9454  109.7454  117.4761  281.5254
 #>  neval
 #>    100
 #>    100
