@@ -11,7 +11,10 @@ default_parameters <- function() {
 
   params <- list(
     contacts = matrix(1),
-    sigma = 0.72,
+    sigma = c(0.72, 0.72, 0.72),
+    nu_1 = c(1e-4, 0, 0, 1e-4), # vector, one value per age group
+    nu_2 = c(1e-4, 0, 0, 1e-4),
+    upsilon = c(6.8, 6.8),
     rho = 0.070,
     season_amp = 7.45,
     season_offset = c(0.8, 0.1, 10, 0.8, 0.1, 0.1, 10),
