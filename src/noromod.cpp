@@ -155,7 +155,7 @@ Rcpp::List norovirus_model_cpp(const double &t,
   Eigen::ArrayXd r_v1ToS_v1 = (delta * state_matrix.col(11));
   Eigen::ArrayXd e_v1ToIa_v1 =
     ((1.0 - sigma_v1) * epsilon) * state_matrix.col(8).array();
-  Eigen::ArrayXd e_v1ToIs_v1 = (sigma * epsilon) * state_matrix.col(8).array();
+  Eigen::ArrayXd e_v1ToIs_v1 = (sigma_v1 * epsilon) * state_matrix.col(8).array();
   Eigen::ArrayXd is_v1ToIa_v1 = psi * state_matrix.col(9).array();
   Eigen::ArrayXd ia_v1ToR_v1 = gamma * state_matrix.col(10).array();
   
@@ -169,7 +169,7 @@ Rcpp::List norovirus_model_cpp(const double &t,
   Eigen::ArrayXd r_v2ToS_v2 = (delta * state_matrix.col(18));
   Eigen::ArrayXd e_v2ToIa_v2 =
     ((1.0 - sigma_v1) * epsilon) * state_matrix.col(15).array();
-  Eigen::ArrayXd e_v2ToIs_v2 = (sigma * epsilon) * state_matrix.col(15).array();
+  Eigen::ArrayXd e_v2ToIs_v2 = (sigma_v2 * epsilon) * state_matrix.col(15).array();
   Eigen::ArrayXd is_v2ToIa_v2 = psi * state_matrix.col(16).array();
   Eigen::ArrayXd ia_v2ToR_v2 = gamma * state_matrix.col(17).array();
   
@@ -330,12 +330,37 @@ struct norovirus_model {
     Eigen::ArrayXd births(4);  // hardcoded for four age groups
     births << births_, 0.0, 0.0, 0.0;
 
-    Eigen::ArrayXd rToS = (delta * state_matrix.col(4));
-    Eigen::ArrayXd eToIa =
-        ((1.0 - sigma) * epsilon) * state_matrix.col(1).array();
-    Eigen::ArrayXd eToIs = (sigma * epsilon) * state_matrix.col(1).array();
-    Eigen::ArrayXd isToIa = psi * state_matrix.col(2).array();
-    Eigen::ArrayXd iaToR = gamma * state_matrix.col(3).array();
+    Eigen::ArrayXd dS = births + rToS - sToE - sToSv1 + sv1ToS + rv1ToS - (state_matrix.col(0).array() * d) +
+      (aging * state_matrix.col(0)).array();
+    Eigen::ArrayXd dE = sToE - eToIa - eToIs - (state_matrix.col(1).array() * d) +
+      (aging * state_matrix.col(1)).array();
+    Eigen::ArrayXd dIs = eToIs - isToIa - (state_matrix.col(2).array() * d) +
+      (aging * state_matrix.col(2)).array();
+    Eigen::ArrayXd dIa = eToIa + isToIa + rToIa - iaToR -
+      (state_matrix.col(3).array() * d) +
+      (aging * state_matrix.col(3)).array();
+    Eigen::ArrayXd dR = iaToR - rToS - rToIa + rv1ToR - (state_matrix.col(4).array() * d) +
+      (aging * state_matrix.col(4)).array();
+    
+    Eigen::ArrayXd dS_v1 = r_v1ToSv1 - s_v1ToE_v1 - sToS_v1 + s_v1ToS - s_v1ToS_v2 + s_v2ToS_v1 -
+      (state_matrix.col(7).array() * d) + (aging * state_matrix.col(7)).array();
+    Eigen::ArrayXd dE_v1 = s_v1ToEv1 - e_v1ToIa_v1 - e_v1ToIs_v1 - (state_matrix.col(8).array() * d);
+    Eigen::ArrayXd dIs_v1 = e_v1ToIs_v1 - is_v1ToIa_v1 - (state_matrix.col(9).array() * d) +
+      (aging * state_matrix.col(9)).array();
+    Eigen::ArrayXd dIa_v1 = e_v1ToIa_v1 + is_v1ToIa_v1 + r_v1ToIa_v1 - ia_v1ToR_v1 - 
+      (state_matrix.col(10).array() * d) + (aging * state_matrix.col(10)).array();
+    Eigen::ArrayXd dR_v1 = ia_v1ToR_v1 - r_v1ToS_v1 - r_v1ToIa_v1 - r_v1ToR - r_v1ToS  + rToR_v1 + r_v2ToRv1 - r_v1ToR_v2
+    - (state_matrix.col(11).array() * d) + (aging * state_matrix.col(11)).array();)
+      
+      Eigen::ArrayXd dS_v2 = r_v2ToSv2 - s_v2ToE_v2 + s_v1ToS_v2 - s_v2ToS_v1 - (state_matrix.col(14).array() * d) +
+      (aging * state_matrix.col(14)).array();
+    Eigen::ArrayXd dE_v2 = s_v2ToEv2 - e_v2ToIa_v2 - e_v2ToIs_v2 - (state_matrix.col(15).array() * d);
+    Eigen::ArrayXd dIs_v2 = e_v2ToIs_v2 - is_v2ToIa_v2 - (state_matrix.col(16).array() * d) +
+      (aging * state_matrix.col(16)).array();
+    Eigen::ArrayXd dIa_v2 = e_v2ToIa_v2 + is_v2ToIa_v2 + r_v2ToIa_v2 - ia_v2ToR_v2 - 
+      (state_matrix.col(17).array() * d) + (aging * state_matrix.col(17)).array();
+    Eigen::ArrayXd dR_v2 = ia_v2ToR_v2 - r_v2ToS_v2 - r_v2ToIa_v2 - r_v2ToS_v1  + r_v1ToRv2 - r_v2ToR_v1
+    - (state_matrix.col(18).array() * d) + (aging * state_matrix.col(18)).array();)
 
     // compartmental changes accounting for contacts (for dS and dE)
     dxdt.col(0) = births + rToS - sToE - (state_matrix.col(0).array() * d) +
