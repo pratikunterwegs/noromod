@@ -76,8 +76,8 @@ norovirus_model_r <- function(t, state, parameters) {
   aging <- parameters[["aging"]]
 
   # vaccination rates
-  nu_1 <- parameters[["nu_1"]]
-  nu_2 <- parameters[["nu_2"]]
+  phi_1 <- parameters[["phi_1"]]
+  phi_2 <- parameters[["phi_2"]]
 
   # waning rates
   upsilon_1 <- 1 / (parameters[["upsilon"]][1] * 365)
@@ -123,7 +123,7 @@ norovirus_model_r <- function(t, state, parameters) {
   # TODO: annotate transitions
   # compartmental transitions - non vaccinated
   dS <- births + (delta * recovered) - new_infections - (d * susceptible) +
-    (aging %*% susceptible) - (nu_1 * susceptible) + (upsilon_1 * vax_1)
+    (aging %*% susceptible) - (phi_1 * susceptible) + (upsilon_1 * vax_1) + (recovered_v1 * (delta * upsilon_1))
   dE <- new_infections - epsilon * (1 - sigma) * exposed - epsilon *
     sigma * exposed - d * exposed + (aging %*% exposed)
   dIs <- epsilon * sigma * exposed - psi * infect_symp - d * infect_symp +
@@ -132,12 +132,12 @@ norovirus_model_r <- function(t, state, parameters) {
     infect_asymp - d * infect_asymp + re_infections + (aging %*% infect_asymp)
   dR <- gamma * infect_asymp - delta * recovered - d * recovered -
     re_infections + (aging %*% recovered) + (upsilon_1 * recovered_v1) -
-    (nu_1 * recovered)
+    (phi_1 * recovered)
 
   # compartmental transitions - vax 1
   dV1 <- (delta * recovered_v1) - new_infections_v1 - (d * vax_1) +
-    (aging %*% vax_1) - (nu_2 * vax_1) + (upsilon_2 * vax_2) +
-    (nu_1 * susceptible) - (upsilon_1 * vax_1)
+    (aging %*% vax_1) - (phi_2 * vax_1) + (upsilon_2 * vax_2) +
+    (phi_1 * susceptible) - (upsilon_1 * vax_1)
   dEv1 <- new_infections_v1 - epsilon * (1 - sigma_v1) * exposed_v1 - epsilon *
     sigma_v1 * exposed_v1 - d * exposed_v1 + (aging %*% exposed_v1)
   dIsv1 <- epsilon * sigma_v1 * exposed_v1 - psi * infect_symp_v1 -
@@ -147,11 +147,11 @@ norovirus_model_r <- function(t, state, parameters) {
     (aging %*% infect_asymp_v1)
   dRv1 <- gamma * infect_asymp_v1 - delta * recovered_v1 - d * recovered_v1 -
     re_infections_v1 + (aging %*% recovered_v1) + (upsilon_2 * recovered_v2) -
-    (nu_2 * recovered_v2) - (upsilon_1 * recovered_v1) + (nu_1 * recovered)
+    (phi_2 * recovered_v2) - (upsilon_1 * recovered_v1) + (phi_1 * recovered) - (recovered_v1 * (delta * upsilon_1))
 
   # compartmental transitions - vax 2
   dV2 <- (delta * recovered_v2) - new_infections_v2 - (d * vax_2) +
-    (aging %*% vax_2) + (nu_2 * vax_1) - (upsilon_2 * vax_2)
+    (aging %*% vax_2) + (phi_2 * vax_1) - (upsilon_2 * vax_2)
   dEv2 <- new_infections_v2 - epsilon * (1 - sigma_v2) * exposed_v2 - epsilon *
     sigma_v2 * exposed_v2 - d * exposed_v2 + (aging %*% exposed_v2)
   dIsv2 <- epsilon * sigma_v2 * exposed_v2 - psi * infect_symp_v2 -
@@ -161,7 +161,7 @@ norovirus_model_r <- function(t, state, parameters) {
     (aging %*% infect_asymp_v2)
   dRv2 <- gamma * infect_asymp_v2 - delta * recovered_v2 - d * recovered_v2 -
     re_infections_v2 + (aging %*% recovered_v2) - (upsilon_2 * recovered_v2) +
-    (nu_2 * recovered_v1)
+    (phi_2 * recovered_v1)
 
   return(list(c(
     dS, dE, dIs, dIa, dR,
