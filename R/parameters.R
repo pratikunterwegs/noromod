@@ -11,18 +11,19 @@ default_parameters <- function() {
 
   params <- list(
     contacts = matrix(1),
-    sigma = c(0.72, 0.72, 0.72),
-    nu_1 = c(1e-4, 0, 0, 1e-4), # vector, one value per age group
-    nu_2 = c(1e-4, 0, 0, 1e-4),
-    upsilon = c(6.8, 6.8),
-    rho = 0.070,
-    season_amp = 7.45,
-    season_offset = c(0.8, 0.1, 10, 0.8, 0.1, 0.1, 10),
+    sigma = c(0.82, 0.41, 0.41),
+    phi_1 = c(1e-4, 0, 0, 1e-4), # vector, one value per age group
+    phi_2 = c(0, 0, 0, 0),
+    upsilon = c(4.4, 0),
+    rho = 0.05,
+    season_amp = 3.6,
+    season_offset = c(5.76, 0, 0, 0, 0, 0, 0),
     # NOTE: only need change points, i.e., final values of each season
-    season_change_points = c(8580, 8944, 9315, 9679, 10043, 10407, 10771),
-    D_immun = 6.8,
-    probT_under5 = log(0.18),
-    probT_over5 = log(0.036),
+    # season_change_points = c(8580, 8944, 9315, 9679, 10043, 10407, 10771),
+    season_change_points = c(11000, 0, 0, 0, 0, 0, 0),
+    D_immun = 4.4,
+    probT_under5 = log(0.195),
+    probT_over5 = log(0.039),
     b = (11.4 / 1000) / 365,
     # background mortality must be a vector for C++ implementations
     # NOTE: this is not age-related mortality
