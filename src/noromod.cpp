@@ -44,14 +44,14 @@ Rcpp::List norovirus_model_cpp(const double &t,
   // handle the initial conditions, which must be rehsaped into a matrix
   // matrix shape hardcoded to be 4 rows and 7 columns
   Eigen::MatrixXd state_matrix =
-      Eigen::Map<Eigen::MatrixXd>(state.data(), 4L, 7L);
+      Eigen::Map<Eigen::MatrixXd>(state.data(), 4L, 21L);
 
   // get ageing matrix
   Eigen::MatrixXd aging = Rcpp::as<Eigen::MatrixXd>(parameters["aging"]);
 
   // get current population size
   const Eigen::ArrayXd population_size =
-      state_matrix.block(0, 0, 4, 5).rowwise().sum();
+      state_matrix.block(0, 0, 4, 15).rowwise().sum();
 
   // modify parameters
   const double delta = 1.0 / (Rcpp::as<double>(parameters["D_immun"]) * 365.0);
@@ -67,11 +67,21 @@ Rcpp::List norovirus_model_cpp(const double &t,
   const double rho = parameters["rho"];
   const double b = parameters["b"];
   const Eigen::ArrayXd d = Rcpp::as<Eigen::ArrayXd>(parameters["d"]);
-  const double sigma = parameters["sigma"];
+  const double sigma = parameters["sigma"][0];
+  const double sigma_v1 = parameters["sigma"][1];
+  const double sigma_v2 = parameters["sigma"][2];
   const double epsilon = parameters["epsilon"];
   const double psi = parameters["psi"];
   const double gamma = parameters["gamma"];
 
+  // vaccination rates
+  const double phi_1 = parameters["phi_1"];
+  const double phi_2 = parameters["phi_2"];
+  
+  // waning rates
+  const double upsilon_1 = 1.0 / (Rcpp::NumericVector(parameters["upsilon"])[0] * 365.0);
+  const double upsilon_2 = 1.0 / (Rcpp::NumericVector(parameters["upsilon"])[1] * 365.0);
+  
   // get seasonal change points
   const Rcpp::NumericVector season_change_points =
       parameters["season_change_points"];
@@ -93,18 +103,42 @@ Rcpp::List norovirus_model_cpp(const double &t,
   // prepare seasonal forcing
   const double seasonal_term = seasonal_forcing(t, w1, w2_current);
 
-  // column indices: 0:S, 1:E, 2:Is, 3:Ia, 4:R
+  // column indices: 0:S, 1:E, 2:Is, 3:Ia, 4:R, 5:rToIa, 6:sToE, 7:Sv1, 8:Ev1, 9:Isv1, 
+  // 10:Iav1, 11:Rv1, 12:rv1ToIav1, 13:sv1ToEv1, 14:Sv2, 15:Ev2, 16:Isv2, 17:Iav2, 
+  // 18:Rv2, 19:rv2ToIav2, 20:sv2ToEv2
   // calculate new infections
   Eigen::ArrayXd sToE =
       param_ * seasonal_term * state_matrix.col(0).array() *
-      (contacts * (state_matrix.col(2) + (state_matrix.col(3) * rho))).array();
+      (contacts * ((state_matrix.col(2) + state_matrix.col(9) + state_matrix.col(16)) +
+      ((state_matrix.col(3) + state_matrix.col(10) + state_matrix.col(17) * rho))).array();
+
+  Eigen::ArrayXd s_v1ToE_v1 =
+      param_ * seasonal_term * state_matrix.col(7).array() *
+      (contacts * ((state_matrix.col(2) + state_matrix.col(9) + state_matrix.col(16)) +
+      ((state_matrix.col(3) + state_matrix.col(10) + state_matrix.col(17) * rho))).array();
+
+  Eigen::ArrayXd s_v2ToE_v2 =
+      param_ * seasonal_term * state_matrix.col(14).array() *
+      (contacts * ((state_matrix.col(2) + state_matrix.col(9) + state_matrix.col(16)) +
+      ((state_matrix.col(3) + state_matrix.col(10) + state_matrix.col(17) * rho))).array();
 
   // calculate re-infections
   // recovered are column index 4 of the initial conditions
   Eigen::ArrayXd rToIa =
       param_ * seasonal_term * state_matrix.col(4).array() *
-      (contacts * (state_matrix.col(2) + (state_matrix.col(3) * rho))).array();
+      (contacts * ((state_matrix.col(2) + state_matrix.col(9) + state_matrix.col(16)) +
+      ((state_matrix.col(3) + state_matrix.col(10) + state_matrix.col(17) * rho))).array();
 
+  Eigen::ArrayXd r_v1ToIa_v1 =
+      param_ * seasonal_term * state_matrix.col(11).array() *
+      (contacts * ((state_matrix.col(2) + state_matrix.col(9) + state_matrix.col(16)) +
+      ((state_matrix.col(3) + state_matrix.col(10) + state_matrix.col(17) * rho))).array();
+  
+  Eigen::ArrayXd r_v2ToIa_v2 =
+      param_ * seasonal_term * state_matrix.col(18).array() *
+      (contacts * ((state_matrix.col(2) + state_matrix.col(9) + state_matrix.col(16)) +
+      ((state_matrix.col(3) + state_matrix.col(10) + state_matrix.col(17) * rho))).array();
+         
   // compartmental transitions
   double births_ = (b * population_size.sum());
   Eigen::ArrayXd births(4);  // hardcoded for four age groups
@@ -116,9 +150,38 @@ Rcpp::List norovirus_model_cpp(const double &t,
   Eigen::ArrayXd eToIs = (sigma * epsilon) * state_matrix.col(1).array();
   Eigen::ArrayXd isToIa = psi * state_matrix.col(2).array();
   Eigen::ArrayXd iaToR = gamma * state_matrix.col(3).array();
+  
+  // v1 transitions
+  Eigen::ArrayXd r_v1ToS_v1 = (delta * state_matrix.col(11));
+  Eigen::ArrayXd e_v1ToIa_v1 =
+    ((1.0 - sigma_v1) * epsilon) * state_matrix.col(8).array();
+  Eigen::ArrayXd e_v1ToIs_v1 = (sigma * epsilon) * state_matrix.col(8).array();
+  Eigen::ArrayXd is_v1ToIa_v1 = psi * state_matrix.col(9).array();
+  Eigen::ArrayXd ia_v1ToR_v1 = gamma * state_matrix.col(10).array();
+  
+  Eigen::ArrayXd sToS_v1 = phi_1 * state_matrix.col(0).array();
+  Eigen::ArrayXd s_v1ToS = upsilon_1 * state_matrix.col(7).array();
+  Eigen::ArrayXd rToRS_v1 = phi_1 * state_matrix.col(4).array();
+  Eigen::ArrayXd r_v1ToR = upsilon_1 * state_matrix.col(11).array();
+  Eigen::ArrayXd r_v1ToS = (delta * upsilon_1) * state_matrix.col(11).array();
+  
+  //v2 transitions
+  Eigen::ArrayXd r_v2ToS_v2 = (delta * state_matrix.col(18));
+  Eigen::ArrayXd e_v2ToIa_v2 =
+    ((1.0 - sigma_v1) * epsilon) * state_matrix.col(15).array();
+  Eigen::ArrayXd e_v2ToIs_v2 = (sigma * epsilon) * state_matrix.col(15).array();
+  Eigen::ArrayXd is_v2ToIa_v2 = psi * state_matrix.col(16).array();
+  Eigen::ArrayXd ia_v2ToR_v2 = gamma * state_matrix.col(17).array();
+  
+  Eigen::ArrayXd r_v2ToS_v2 = (delta * state_matrix.col(18));
+  Eigen::ArrayXd s_v1ToS_v2 = phi_2 * state_matrix.col(7).array();
+  Eigen::ArrayXd s_v2ToS_v1 = upsilon_2 * state_matrix.col(14).array();
+  Eigen::ArrayXd r_v1ToR_v2 = phi_2 * state_matrix.col(11).array();
+  Eigen::ArrayXd r_v2ToR_v1 = upsilon_2 * state_matrix.col(18).array();
+  Eigen::ArrayXd r_v2ToS_v1 = (delta * upsilon_2) * state_matrix.col(18).array();
 
   // compartmental changes
-  Eigen::ArrayXd dS = births + rToS - sToE - (state_matrix.col(0).array() * d) +
+  Eigen::ArrayXd dS = births + rToS - sToE - sToSv1 + sv1ToS + rv1ToS - (state_matrix.col(0).array() * d) +
                       (aging * state_matrix.col(0)).array();
   Eigen::ArrayXd dE = sToE - eToIa - eToIs - (state_matrix.col(1).array() * d) +
                       (aging * state_matrix.col(1)).array();
@@ -127,13 +190,34 @@ Rcpp::List norovirus_model_cpp(const double &t,
   Eigen::ArrayXd dIa = eToIa + isToIa + rToIa - iaToR -
                        (state_matrix.col(3).array() * d) +
                        (aging * state_matrix.col(3)).array();
-  Eigen::ArrayXd dR = iaToR - rToS - rToIa - (state_matrix.col(4).array() * d) +
+  Eigen::ArrayXd dR = iaToR - rToS - rToIa + rv1ToR - (state_matrix.col(4).array() * d) +
                       (aging * state_matrix.col(4)).array();
+  
+  Eigen::ArrayXd dS_v1 = r_v1ToSv1 - s_v1ToE_v1 - sToS_v1 + s_v1ToS - s_v1ToS_v2 + s_v2ToS_v1 -
+                      (state_matrix.col(7).array() * d) + (aging * state_matrix.col(7)).array();
+  Eigen::ArrayXd dE_v1 = s_v1ToEv1 - e_v1ToIa_v1 - e_v1ToIs_v1 - (state_matrix.col(8).array() * d);
+  Eigen::ArrayXd dIs_v1 = e_v1ToIs_v1 - is_v1ToIa_v1 - (state_matrix.col(9).array() * d) +
+                       (aging * state_matrix.col(9)).array();
+  Eigen::ArrayXd dIa_v1 = e_v1ToIa_v1 + is_v1ToIa_v1 + r_v1ToIa_v1 - ia_v1ToR_v1 - 
+                       (state_matrix.col(10).array() * d) + (aging * state_matrix.col(10)).array();
+  Eigen::ArrayXd dR_v1 = ia_v1ToR_v1 - r_v1ToS_v1 - r_v1ToIa_v1 - r_v1ToR - r_v1ToS  + rToR_v1 + r_v2ToRv1 - r_v1ToR_v2
+                      - (state_matrix.col(11).array() * d) + (aging * state_matrix.col(11)).array();)
+    
+  Eigen::ArrayXd dS_v2 = r_v2ToSv2 - s_v2ToE_v2 + s_v1ToS_v2 - s_v2ToS_v1 - (state_matrix.col(14).array() * d) +
+                      (aging * state_matrix.col(14)).array();
+  Eigen::ArrayXd dE_v2 = s_v2ToEv2 - e_v2ToIa_v2 - e_v2ToIs_v2 - (state_matrix.col(15).array() * d);
+  Eigen::ArrayXd dIs_v2 = e_v2ToIs_v2 - is_v2ToIa_v2 - (state_matrix.col(16).array() * d) +
+                       (aging * state_matrix.col(16)).array();
+  Eigen::ArrayXd dIa_v2 = e_v2ToIa_v2 + is_v2ToIa_v2 + r_v2ToIa_v2 - ia_v2ToR_v2 - 
+                       (state_matrix.col(17).array() * d) + (aging * state_matrix.col(17)).array();
+  Eigen::ArrayXd dR_v2 = ia_v2ToR_v2 - r_v2ToS_v2 - r_v2ToIa_v2 - r_v2ToS_v1  + r_v1ToRv2 - r_v2ToR_v1
+                      - (state_matrix.col(18).array() * d) + (aging * state_matrix.col(18)).array();)
+  
   // must also return re-infections as rToIa, and new infections as sToE
 
   // create return array
   Eigen::VectorXd vec_changes(state_matrix.size());
-  vec_changes << dS, dE, dIs, dIa, dR, rToIa, sToE;
+  vec_changes << dS, dE, dIs, dIa, dR, rToIa, sToE, dS_v1, dE_v1, dIs_v1, dIa_v1, dR_v1, r_v1ToIa_v1, s_v1ToE_v1, dS_v2, dE_v2, dIs_v2, dIa_v2, dR_v2, r_v2ToIa_v2, s_v2ToE_v2;;
 
   return Rcpp::List::create(vec_changes);
 }
@@ -141,7 +225,7 @@ Rcpp::List norovirus_model_cpp(const double &t,
 struct norovirus_model {
   const double rho, b;
   Eigen::ArrayXd d;
-  const double sigma, epsilon, psi, gamma;
+  const double sigma, epsilon, psi, gamma, phi, upsilon;
   double delta, w1, q1, q2;
   const std::vector<double> w2_values, season_change_points;
   Eigen::MatrixXd contacts, aging;
@@ -158,6 +242,9 @@ struct norovirus_model {
         delta(params["D_immun"]),
         w1(params["season_amp"]),
         q1(params["probT_under5"]),
+        q2(params["probT_over5"]),
+        phi(params["phi"]),
+        upsilon(params["upsilon"]),
         q2(params["probT_over5"]),
         w2_values(Rcpp::as<std::vector<double> >(params["season_offset"])),
         season_change_points(
@@ -206,6 +293,16 @@ struct norovirus_model {
         param_ * seasonal_term * state_matrix.col(0).array() *
         (contacts * (state_matrix.col(2) + (state_matrix.col(3) * rho)))
             .array();
+        
+    Eigen::ArrayXd s_v1ToE_v1 =
+        param_ * seasonal_term * state_matrix.col(7).array() *
+        (contacts * ((state_matrix.col(2) + state_matrix.col(9) + state_matrix.col(16)) +
+        ((state_matrix.col(3) + state_matrix.col(10) + state_matrix.col(17) * rho))).array();
+           
+    Eigen::ArrayXd s_v2ToE_v2 =
+        param_ * seasonal_term * state_matrix.col(14).array() *
+        (contacts * ((state_matrix.col(2) + state_matrix.col(9) + state_matrix.col(16)) +
+        ((state_matrix.col(3) + state_matrix.col(10) + state_matrix.col(17) * rho))).array();
 
     // calculate re-infections
     // recovered are column index 4 of the initial conditions
@@ -213,6 +310,16 @@ struct norovirus_model {
         param_ * seasonal_term * state_matrix.col(4).array() *
         (contacts * (state_matrix.col(2) + (state_matrix.col(3) * rho)))
             .array();
+        
+    Eigen::ArrayXd r_v1ToIa_v1 =
+        param_ * seasonal_term * state_matrix.col(11).array() *
+        (contacts * ((state_matrix.col(2) + state_matrix.col(9) + state_matrix.col(16)) +
+        ((state_matrix.col(3) + state_matrix.col(10) + state_matrix.col(17) * rho))).array();
+           
+    Eigen::ArrayXd r_v2ToIa_v2 =
+         param_ * seasonal_term * state_matrix.col(18).array() *
+         (contacts * ((state_matrix.col(2) + state_matrix.col(9) + state_matrix.col(16)) +
+         ((state_matrix.col(3) + state_matrix.col(10) + state_matrix.col(17) * rho))).array();
 
     // get current population size
     const Eigen::ArrayXd population_size =
@@ -244,6 +351,27 @@ struct norovirus_model {
                   (aging * state_matrix.col(4)).array();
     dxdt.col(5) = rToIa;
     dxdt.col(6) = sToE;
+    dxdt.col(7) = r_v1ToSv1 - s_v1ToE_v1 - sToS_v1 + s_v1ToS - s_v1ToS_v2 + s_v2ToS_v1 -
+      (state_matrix.col(7).array() * d) + (aging * state_matrix.col(7)).array();
+    dxdt.col(8) = s_v1ToEv1 - e_v1ToIa_v1 - e_v1ToIs_v1 - (state_matrix.col(8).array() * d);
+    dxdt.col(9) = e_v1ToIs_v1 - is_v1ToIa_v1 - (state_matrix.col(9).array() * d) +
+      (aging * state_matrix.col(9)).array();
+    dxdt.col(10) = e_v1ToIa_v1 + is_v1ToIa_v1 + r_v1ToIa_v1 - ia_v1ToR_v1 - 
+      (state_matrix.col(10).array() * d) + (aging * state_matrix.col(10)).array();
+    dx.dt(11) = ia_v1ToR_v1 - r_v1ToS_v1 - r_v1ToIa_v1 - r_v1ToR - r_v1ToS  + rToR_v1 + r_v2ToRv1 - r_v1ToR_v2
+    - (state_matrix.col(11).array() * d) + (aging * state_matrix.col(11)).array();)
+    dx.dt(12) = r_v1ToIa_v1;
+    dx.dt(13) = s_v1ToE_v1;
+    dx.dt(14) = r_v2ToSv2 - s_v2ToE_v2 + s_v1ToS_v2 - s_v2ToS_v1 - (state_matrix.col(14).array() * d) +
+      (aging * state_matrix.col(14)).array();
+    dx.dt(15) = s_v2ToEv2 - e_v2ToIa_v2 - e_v2ToIs_v2 - (state_matrix.col(15).array() * d);
+    dx.dt(16) = e_v2ToIs_v2 - is_v2ToIa_v2 - (state_matrix.col(16).array() * d) +
+      (aging * state_matrix.col(16)).array();
+    dx.dt(17) = e_v2ToIa_v2 + is_v2ToIa_v2 + r_v2ToIa_v2 - ia_v2ToR_v2 - 
+      (state_matrix.col(17).array() * d) + (aging * state_matrix.col(17)).array();
+    dx.dt(18) = ia_v2ToR_v2 - r_v2ToS_v2 - r_v2ToIa_v2 - r_v2ToS_v1  + r_v1ToRv2 - r_v2ToR_v1 - (state_matrix.col(18).array() * d) + (aging * state_matrix.col(18)).array();)
+    dx.dt(19) = r_v2ToIa_v2;
+    dx.dt(20) = s_v2ToE_v2;
   }
 };
 
