@@ -19,7 +19,8 @@ default_parameters <- function() {
     season_amp = 3.6,
     season_offset = c(5.76, 0, 0, 0, 0, 0, 0),
     # NOTE: only need change points, i.e., final values of each season
-    # season_change_points = c(8580, 8944, 9315, 9679, 10043, 10407, 10771),
+    # alternative season_change_points =
+    # c(8580, 8944, 9315, 9679, 10043, 10407, 10771) # nolint
     season_change_points = c(11000, 0, 0, 0, 0, 0, 0),
     D_immun = 4.4,
     probT_under5 = log(0.195),
