@@ -26,20 +26,23 @@ norovirus_model_r <- function(t, state, parameters) {
   n_age_groups <- parameters[["n_age_groups"]]
 
   # compartmental structure is repeated over array slices
+  # nolint start
   # 1|2| 3| 4|5|      6|  7
   # S|E|Ia|Is|R|new_inf|re_inf
+  # nolint end
 
   # hardcoding the dimensions although this could be specified in parameters
   state <- array(
     state,
-    dim = c(4L, 7L, 3L) # 4 age groups, 7 states, 3 levels of vaccination
+    dim = c(n_age_groups, 7L, 3L) # 4 age groups, 7 states, 3 levels of vax
   )
 
   # count the total population as the sum of the first five columns
   # hardcoding the number of epidemiological compartments - S,E,Is,Ia,R
   total_pop <- rowSums(state[, seq(5L), ])
 
-  # some parameters
+  # NOTE: parameters are handled here for clarity, some performance loss
+  # is expected due to repeated calculations
   delta <- 1 / (parameters[["D_immun"]] * 365)
   w1 <- (parameters[["season_amp"]] / 100)
   w2_values <- (parameters[["season_offset"]] / 100)
@@ -49,11 +52,9 @@ norovirus_model_r <- function(t, state, parameters) {
 
   # more parameters
   rho <- parameters[["rho"]]
-  b <- parameters[["b"]] #* 60286751
+  b <- parameters[["b"]] # 60286751
   d <- parameters[["d"]]
   sigma <- parameters[["sigma"]]
-  # sigma_v1 <- parameters[["sigma"]][2]
-  # sigma_v2 <- parameters[["sigma"]][3]
   epsilon <- parameters[["epsilon"]]
   psi <- parameters[["psi"]]
   gamma <- parameters[["gamma"]]
@@ -103,14 +104,22 @@ norovirus_model_r <- function(t, state, parameters) {
 
   # waning immunity: δ*R + aging out: aging * S - background deaths: d*S
   # change in susceptibles
-  dState[, 1, ] <- (delta * state[, 5L, ]) + (aging %*% state[, 1L, ]) - new_infections -
-    (state[, 1, ] * d)
+  dState[, 1, ] <- (delta * state[, 5L, ]) + (aging %*% state[, 1L, ]) -
+    new_infections - (state[, 1, ] * d)
   dState[, 1, 1] <- dState[, 1, 1] + births
+
+  # account for vaccinations and vaccine immunity waning in and out
+  dS_vax_out <- state[, 1, ] * matrix(c(phi_1, phi_2, rep(0, 4)), nrow = 4)
+  dS_waning_out <- state[, 1, ] *
+    matrix(c(rep(0, 4), upsilon_1, upsilon_2), nrow = 4)
+
+  dState[, 1, ] <- dState[, 1, ] - (dS_vax_out + dS_waning_out) +
+    dS_vax_out[, c(3, 1, 2)] + dS_waning_out[, c(2, 3, 1)]
 
   # exposed to infectious: ɛ*E + aging out: aging * E
   # change in exposed
-  dState[, 2, ] <- (epsilon * state[, 2L, ]) + (aging %*% state[, 2L, ]) + new_infections -
-    (state[, 2, ] * d)
+  dState[, 2, ] <- (epsilon * state[, 2L, ]) + (aging %*% state[, 2L, ]) +
+    new_infections - (state[, 2, ] * d)
 
   # symptomatic to asymptomatic: ψ*Is + # aging out: aging * Is +
   # exposed to infectious symptomatic: ɛ*σ*E
@@ -129,8 +138,16 @@ norovirus_model_r <- function(t, state, parameters) {
 
   # recovery: γ*Ia + aging out: aging * R
   # change in recovered
-  dState[, 5, ] <- (gamma * state[, 4L, ]) + (aging %*% state[, 5L, ]) - 
+  dState[, 5, ] <- (gamma * state[, 4L, ]) + (aging %*% state[, 5L, ]) -
     re_infections - (state[, 5, ] * d)
+
+  # account for vaccinations and vaccine immunity waning in and out
+  dR_vax_out <- state[, 5, ] * matrix(c(phi_1, phi_2, rep(0, 4)), nrow = 4)
+  dR_waning_out <- state[, 5, ] *
+    matrix(c(rep(0, 4), upsilon_1, upsilon_2), nrow = 4)
+
+  dState[, 5, ] <- dState[, 5, ] - (dR_vax_out + dR_waning_out) +
+    dR_vax_out[, c(3, 1, 2)] + dR_waning_out[, c(2, 3, 1)]
 
   # store new infections and re-infections
   dState[, 6, ] <- new_infections
