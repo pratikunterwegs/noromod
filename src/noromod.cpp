@@ -3,16 +3,37 @@
 // clang-format off
 #include <Rcpp.h>
 #include <RcppEigen.h>
-#include <epidemics.h>
 
 #include <cmath>
+#include <vector>
 #include <boost/numeric/odeint.hpp>
+#include <unsupported/Eigen/CXX11/Tensor>
+
 // clang-format on
 
 // [[Rcpp::plugins(cpp14)]]
 // [[Rcpp::depends(RcppEigen)]]
 // [[Rcpp::depends(BH)]]
-// [[Rcpp::depends(epidemics)]]
+
+typedef std::vector<double> state_type;
+
+/// @brief A simple observer for the integrator
+struct observer {
+  std::vector<state_type> &m_states;
+  std::vector<double> &m_times;
+
+  /// @brief Constructor for the observer
+  /// @param states A vector of `state_type`, the model compartments
+  /// @param times A vector of doubles, the model times logged
+  observer(std::vector<state_type> &states,  // NOLINT
+           std::vector<double> &times)       // NOLINT
+      : m_states(states), m_times(times) {}
+
+  void operator()(const state_type &x, double t) {
+    m_states.push_back(x);
+    m_times.push_back(t);
+  }
+};
 
 /// @brief Return a coefficient of seasonal forcing
 /// @param t Double value for the time, taken as the ordinal day
