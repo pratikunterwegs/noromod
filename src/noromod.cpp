@@ -244,18 +244,22 @@ Rcpp::List norovirus_model_cpp(const double &t,
 }
 
 struct norovirus_model {
-  const double rho, b;
-  Eigen::ArrayXd d;
-  const double sigma, epsilon, psi, gamma, phi, upsilon;
-  double delta, w1, q1, q2;
+  const double rho, b, births, d;
+  Eigen::Tensor<double, 1> d_rate; // remove background mortality
+  Rcpp::NumericVector sigma;
+  Eigen::Tensor<double, 2> sigma_tensor (sigma.size(), sigma.size());
+  const double epsilon, psi, gamma, phi, upsilon;
+  double delta, w1, q1, q2, seasonal_term;
   const std::vector<double> w2_values, season_change_points;
-  Eigen::MatrixXd contacts, aging;
-  Eigen::ArrayXd param_;
+  Rcpp::NumericMatrix contacts, aging;
+  Rcpp::NumericVector phi_1, phi_2, upsilon_1, upsilon_2;
+  Eigen::Tensor<double, 2> contacts_tensor, aging_tensor;
+  Eigen::Tensor<double, 1> param_;
   // npi, interv, pop
-  explicit norovirus_model(const Rcpp::List params)
+  explicit norovirus_model(const Rcpp::List &params)
       : rho(params["rho"]),
         b(params["b"]),
-        d(Rcpp::as<Eigen::ArrayXd>(params["d"])),
+        d(params["d"]),
         sigma(params["sigma"]),
         epsilon(params["epsilon"]),
         psi(params["psi"]),
@@ -264,13 +268,15 @@ struct norovirus_model {
         w1(params["season_amp"]),
         q1(params["probT_under5"]),
         q2(params["probT_over5"]),
-        phi(params["phi"]),
-        upsilon(params["upsilon"]),
+        phi_1(params["phi_1"]),
+        phi_2(params["phi_2"]),
+        upsilon_1(params["upsilon_1"]),
+        upsilon_2(params["upsilon_2"]),
         q2(params["probT_over5"]),
         w2_values(Rcpp::as<std::vector<double> >(params["season_offset"])),
         season_change_points(
             Rcpp::as<std::vector<double> >(params["season_change_points"])),
-        contacts(Rcpp::as<Eigen::MatrixXd>(params["contacts"])),
+        contacts(params["contacts"]),
         aging(Rcpp::as<Eigen::MatrixXd>(params["aging"])) {}
 
   void init_model() {
@@ -281,16 +287,37 @@ struct norovirus_model {
     q1 = std::exp(q1);
     q2 = std::exp(q2);
 
-    // param vector
-    param_ = Eigen::ArrayXd(4);
-    param_ << q1, q2, q2, q2;
+    // param Tensor
+    param_.setValues({q1, q2, q2, q2});
+
+    // vaccination Tensor
+
+    // waning Tensor
+
+    // Sigma Tensor initialisation, create a diagonal matrix
+    sigma_tensor.setZero();
+    for (size_t i = 0; i < sigma.size(); i++)
+    {
+      sigma_tensor(i, i) = sigma[i];
+    }
+    
+
+    // map to tensors; number of age groups is hardcoded to 4 giving 4x4 matrices
+    contacts_tensor = Eigen::TensorMap<Eigen::Tensor<double, 2>> (contacts, 4, 4);
+    aging_tensor = Eigen::TensorMap<Eigen::Tensor<double, 2>> (aging, 4, 4);
   }
 
-  void operator()(const odetools::state_type &state_matrix,
-                  odetools::state_type &dxdt,  // NOLINT
+  // add nolint flags to allow passing by reference
+  void operator()(std::vector<double> &x, // NOLINT
+                  std::vector<double> &dx,  // NOLINT
                   const double t) {
-    // resize the dxdt vector to the dimensions of state_matrix
-    dxdt.resize(state_matrix.rows(), state_matrix.cols());
+
+    // map a tensor to the state vector with required dims (4, 7, 3)
+    // for age groups, epi compartments, vaccination strata
+    auto x_tensor = Eigen::TensorMap<Eigen::Tensor<double, 3, Eigen::ColMajor>> 
+      (&x[0], 4, 7, 3);
+    auto dx_tensor = Eigen::TensorMap<Eigen::Tensor<double, 3, Eigen::ColMajor>>
+      (&dx[0], 4, 7, 3)
 
     // prepare w2_current, initially first value
     double w2_current = w2_values[0] / 100.0;
@@ -302,122 +329,73 @@ struct norovirus_model {
       }
     }
 
-    // prepare seasonal forcing
-    const double seasonal_term = seasonal_forcing(t, w1, w2_current);
+    // recalculate seasonal forcing term
+    seasonal_term = seasonal_forcing(t, w1, w2_current);
 
     // NB: Casting initial conditions matrix columns to arrays is necessary
     // for vectorised operations
 
-    // column indices: 0:S, 1:E, 2:Is, 3:Ia, 4:R
-    // calculate new infections
-    Eigen::ArrayXd sToE =
-        param_ * seasonal_term * state_matrix.col(0).array() *
-        (contacts * (state_matrix.col(2) + (state_matrix.col(3) * rho)))
-            .array();
-        
-    Eigen::ArrayXd s_v1ToE_v1 =
-        param_ * seasonal_term * state_matrix.col(7).array() *
-        (contacts * ((state_matrix.col(2) + state_matrix.col(9) + state_matrix.col(16)) +
-        ((state_matrix.col(3) + state_matrix.col(10) + state_matrix.col(17) * rho))).array();
-           
-    Eigen::ArrayXd s_v2ToE_v2 =
-        param_ * seasonal_term * state_matrix.col(14).array() *
-        (contacts * ((state_matrix.col(2) + state_matrix.col(9) + state_matrix.col(16)) +
-        ((state_matrix.col(3) + state_matrix.col(10) + state_matrix.col(17) * rho))).array();
-
-    // calculate re-infections
-    // recovered are column index 4 of the initial conditions
-    Eigen::ArrayXd rToIa =
-        param_ * seasonal_term * state_matrix.col(4).array() *
-        (contacts * (state_matrix.col(2) + (state_matrix.col(3) * rho)))
-            .array();
-        
-    Eigen::ArrayXd r_v1ToIa_v1 =
-        param_ * seasonal_term * state_matrix.col(11).array() *
-        (contacts * ((state_matrix.col(2) + state_matrix.col(9) + state_matrix.col(16)) +
-        ((state_matrix.col(3) + state_matrix.col(10) + state_matrix.col(17) * rho))).array();
-           
-    Eigen::ArrayXd r_v2ToIa_v2 =
-         param_ * seasonal_term * state_matrix.col(18).array() *
-         (contacts * ((state_matrix.col(2) + state_matrix.col(9) + state_matrix.col(16)) +
-         ((state_matrix.col(3) + state_matrix.col(10) + state_matrix.col(17) * rho))).array();
-
-    // get current population size
-    const Eigen::ArrayXd population_size =
-        state_matrix.block(0, 0, 4, 5).rowwise().sum();
-
-    // compartmental transitions
-    double births_ = (b * population_size.sum());
-    Eigen::ArrayXd births(4);  // hardcoded for four age groups
-    births << births_, 0.0, 0.0, 0.0;
-
-    Eigen::ArrayXd dS = births + rToS - sToE - sToSv1 + sv1ToS + rv1ToS - (state_matrix.col(0).array() * d) +
-      (aging * state_matrix.col(0)).array();
-    Eigen::ArrayXd dE = sToE - eToIa - eToIs - (state_matrix.col(1).array() * d) +
-      (aging * state_matrix.col(1)).array();
-    Eigen::ArrayXd dIs = eToIs - isToIa - (state_matrix.col(2).array() * d) +
-      (aging * state_matrix.col(2)).array();
-    Eigen::ArrayXd dIa = eToIa + isToIa + rToIa - iaToR -
-      (state_matrix.col(3).array() * d) +
-      (aging * state_matrix.col(3)).array();
-    Eigen::ArrayXd dR = iaToR - rToS - rToIa + rv1ToR - (state_matrix.col(4).array() * d) +
-      (aging * state_matrix.col(4)).array();
+    // column indices: 0:S, 1:E, 2:Is, 3:Ia, 4:R, 5:new_infections, 6:re_infects
+    // calculate infection potential
+    auto infection_potential = contacts_tensor.contract(
+      (x_tensor.chip(2, 1) + (x_tensor.chip(3, 1) * rho)).sum(Eigen::array<int, 1>({1})),
+      Eigen::IndexPair<int>(1, 0)
+    ) * seasonal_term;
     
-    Eigen::ArrayXd dS_v1 = r_v1ToSv1 - s_v1ToE_v1 - sToS_v1 + s_v1ToS - s_v1ToS_v2 + s_v2ToS_v1 -
-      (state_matrix.col(7).array() * d) + (aging * state_matrix.col(7)).array();
-    Eigen::ArrayXd dE_v1 = s_v1ToEv1 - e_v1ToIa_v1 - e_v1ToIs_v1 - (state_matrix.col(8).array() * d);
-    Eigen::ArrayXd dIs_v1 = e_v1ToIs_v1 - is_v1ToIa_v1 - (state_matrix.col(9).array() * d) +
-      (aging * state_matrix.col(9)).array();
-    Eigen::ArrayXd dIa_v1 = e_v1ToIa_v1 + is_v1ToIa_v1 + r_v1ToIa_v1 - ia_v1ToR_v1 - 
-      (state_matrix.col(10).array() * d) + (aging * state_matrix.col(10)).array();
-    Eigen::ArrayXd dR_v1 = ia_v1ToR_v1 - r_v1ToS_v1 - r_v1ToIa_v1 - r_v1ToR - r_v1ToS  + rToR_v1 + r_v2ToRv1 - r_v1ToR_v2
-    - (state_matrix.col(11).array() * d) + (aging * state_matrix.col(11)).array();)
-      
-      Eigen::ArrayXd dS_v2 = r_v2ToSv2 - s_v2ToE_v2 + s_v1ToS_v2 - s_v2ToS_v1 - (state_matrix.col(14).array() * d) +
-      (aging * state_matrix.col(14)).array();
-    Eigen::ArrayXd dE_v2 = s_v2ToEv2 - e_v2ToIa_v2 - e_v2ToIs_v2 - (state_matrix.col(15).array() * d);
-    Eigen::ArrayXd dIs_v2 = e_v2ToIs_v2 - is_v2ToIa_v2 - (state_matrix.col(16).array() * d) +
-      (aging * state_matrix.col(16)).array();
-    Eigen::ArrayXd dIa_v2 = e_v2ToIa_v2 + is_v2ToIa_v2 + r_v2ToIa_v2 - ia_v2ToR_v2 - 
-      (state_matrix.col(17).array() * d) + (aging * state_matrix.col(17)).array();
-    Eigen::ArrayXd dR_v2 = ia_v2ToR_v2 - r_v2ToS_v2 - r_v2ToIa_v2 - r_v2ToS_v1  + r_v1ToRv2 - r_v2ToR_v1
-    - (state_matrix.col(18).array() * d) + (aging * state_matrix.col(18)).array();)
+    // calculate new infections and reinfections in each vaccination stratum
+    auto new_infections = x_tensor.chip(0, 1) * infection_potential.broadcast(std::array<long, 1>{3}).reshape(std::array<long, 2>{4, 3});
+    auto re_infections = x_tensor.chip(4, 1) * infection_potential.broadcast(std::array<long, 1>{3}).reshape(std::array<long, 2>{4, 3});
 
-    // compartmental changes accounting for contacts (for dS and dE)
-    dxdt.col(0) = births + rToS - sToE - (state_matrix.col(0).array() * d) +
-                  (aging * state_matrix.col(0)).array();
-    dxdt.col(1) = sToE - eToIa - eToIs - (state_matrix.col(1).array() * d) +
-                  (aging * state_matrix.col(1)).array();
-    dxdt.col(2) = eToIs - isToIa - (state_matrix.col(2).array() * d) +
-                  (aging * state_matrix.col(2)).array();
-    dxdt.col(3) = eToIa + isToIa + rToIa - iaToR -
-                  (state_matrix.col(3).array() * d) +
-                  (aging * state_matrix.col(3)).array();
-    dxdt.col(4) = iaToR - rToS - rToIa - (state_matrix.col(4).array() * d) +
-                  (aging * state_matrix.col(4)).array();
-    dxdt.col(5) = rToIa;
-    dxdt.col(6) = sToE;
-    dxdt.col(7) = r_v1ToSv1 - s_v1ToE_v1 - sToS_v1 + s_v1ToS - s_v1ToS_v2 + s_v2ToS_v1 -
-      (state_matrix.col(7).array() * d) + (aging * state_matrix.col(7)).array();
-    dxdt.col(8) = s_v1ToEv1 - e_v1ToIa_v1 - e_v1ToIs_v1 - (state_matrix.col(8).array() * d);
-    dxdt.col(9) = e_v1ToIs_v1 - is_v1ToIa_v1 - (state_matrix.col(9).array() * d) +
-      (aging * state_matrix.col(9)).array();
-    dxdt.col(10) = e_v1ToIa_v1 + is_v1ToIa_v1 + r_v1ToIa_v1 - ia_v1ToR_v1 - 
-      (state_matrix.col(10).array() * d) + (aging * state_matrix.col(10)).array();
-    dx.dt(11) = ia_v1ToR_v1 - r_v1ToS_v1 - r_v1ToIa_v1 - r_v1ToR - r_v1ToS  + rToR_v1 + r_v2ToRv1 - r_v1ToR_v2
-    - (state_matrix.col(11).array() * d) + (aging * state_matrix.col(11)).array();)
-    dx.dt(12) = r_v1ToIa_v1;
-    dx.dt(13) = s_v1ToE_v1;
-    dx.dt(14) = r_v2ToSv2 - s_v2ToE_v2 + s_v1ToS_v2 - s_v2ToS_v1 - (state_matrix.col(14).array() * d) +
-      (aging * state_matrix.col(14)).array();
-    dx.dt(15) = s_v2ToEv2 - e_v2ToIa_v2 - e_v2ToIs_v2 - (state_matrix.col(15).array() * d);
-    dx.dt(16) = e_v2ToIs_v2 - is_v2ToIa_v2 - (state_matrix.col(16).array() * d) +
-      (aging * state_matrix.col(16)).array();
-    dx.dt(17) = e_v2ToIa_v2 + is_v2ToIa_v2 + r_v2ToIa_v2 - ia_v2ToR_v2 - 
-      (state_matrix.col(17).array() * d) + (aging * state_matrix.col(17)).array();
-    dx.dt(18) = ia_v2ToR_v2 - r_v2ToS_v2 - r_v2ToIa_v2 - r_v2ToS_v1  + r_v1ToRv2 - r_v2ToR_v1 - (state_matrix.col(18).array() * d) + (aging * state_matrix.col(18)).array();)
-    dx.dt(19) = r_v2ToIa_v2;
-    dx.dt(20) = s_v2ToE_v2;
+    // calculate births as b * total population; b = mean per-capita births
+    // define starting offset, i.e., starting at 1st row, col, stratum
+    Eigen::array<Eigen::Index, 3> offsets = {0, 0, 0};
+    // all four ages, first five epi compartments, all vax strata
+    Eigen::array<Eigen::Index, 3> extents = {4, 5, 3};
+    // births is a double for the total number of births, while `b` is the rate
+    births = x_tensor.slice(offsets, extents).sum(Eigen::array<int, 3>({0, 1, 2})) * b;
+
+    // changes in susceptibles from births and infections
+    dx_tensor.chip(0, 1) = -new_infections + (delta * x_tensor.chip(4, 0));
+    // births enter the unvaccinated susceptible, lowest age group only
+    dx_tensor(0, 0, 0) = dx_tensor(0, 0, 0) + births; 
+
+    // changes in exposed from infections
+    dx_tensor.chip(1, 1) = new_infections - (epsilon * x_tensor.chip(1, 1));
+
+    // define product dims
+    Eigen::array<Eigen::IndexPair<int>, 1> product_dims = {
+      Eigen::IndexPair<int>(1, 0)
+    };
+
+    // changes in infectious asymptomatic
+    dx_tensor.chip(2, 1) = (-psi * x_tensor.chip(2, 1)) + 
+      (epsilon * x_tensor.chip(2, 1).contract(sigma_tensor, product_dims));
+
+    // changes in infectious symptomatic
+    dx_tensor.chip(3, 1) = (psi * x_tensor.chip(2, 1)) - (gamma * x_tensor.chip(3, 1)) +
+      re_infections +
+      (epsilon * x_tensor.chip(2, 1).contract(1.0 - sigma_tensor, product_dims));
+
+    // changes in recoveries
+    dx_tensor.chip(4, 1) = (gamma * x_tensor.chip(3, 1)) - re_infections;
+
+    // calculate background mortality in all epi compartments; uniform mortality rate
+    dx_tensor.slice(offsets, extents) = dx_tensor.slice(offsets, extents) - (x_tensor.slice(offsets, extents) * d);
+
+    // apply aging-related flows to all compartments and all vaccination strata
+    // NOTE: dx = x + aging; aging matrix coeffs have appropriate signs
+    for (size_t i = 0; i < 3L; i++)
+    {
+      dx_tensor.slice(offsets, extents) = dx_tensor.slice(offsets, extents) + (
+        aging_tensor.contract(x_tensor.slice(offsets, extents), product_dims);
+      )
+    }
+
+    // new infections
+    dx_tensor.chip(5, 1) = new_infections;
+
+    // reinfections
+    dx_tensor.chip(6, 1) = re_infections;
   }
 };
 
