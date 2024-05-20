@@ -46,26 +46,28 @@ const double seasonal_forcing(const double &t, const double &w1,
 }
 
 struct norovirus_model {
-  const double rho, b, d;
+  const double rho, b, d;  // single value for d (background mortality)
   double births = 0.0;
-  Eigen::Tensor<double, 1> d_rate;  // remove background mortality
-  Rcpp::NumericVector sigma;        // has size 3L for 3 levels of protection
-  Eigen::Tensor<double, 2> sigma_tensor =
+  Rcpp::NumericVector sigma_vec;  // has size 3L for 3 levels of protection
+  Eigen::Tensor<double, 2> sigma =
       Eigen::Tensor<double, 2>(3, 3);  // for 3 levels of protection
   const double epsilon, psi, gamma;
   double delta, w1, q1, q2;
   double seasonal_term = 0.0;
   const std::vector<double> w2_values, season_change_points;
-  std::vector<double> contacts, aging;  // cannot be const as mapped to Tensor
-  Rcpp::NumericVector phi_1, phi_2, upsilon_1, upsilon_2;
-  Eigen::Tensor<double, 2> contacts_tensor, aging_tensor;
+  std::vector<double> contacts_vec,
+      aging_vec;  // cannot be const as mapped to Tensor
+
+  // vaccination rate and vaccine-immunity waning rate
+  std::vector<double> phi_vec, upsilon_vec;
+  Eigen::Tensor<double, 2> contacts, aging, phi, upsilon;
   Eigen::Tensor<double, 1> param_;
   // npi, interv, pop
   explicit norovirus_model(const Rcpp::List &params)
       : rho(params["rho"]),
         b(params["b"]),
         d(params["d"]),
-        sigma(params["sigma"]),
+        sigma_vec(params["sigma"]),
         epsilon(params["epsilon"]),
         psi(params["psi"]),
         gamma(params["gamma"]),
@@ -73,15 +75,13 @@ struct norovirus_model {
         w1(params["season_amp"]),
         q1(params["probT_under5"]),
         q2(params["probT_over5"]),
-        phi_1(params["phi_1"]),
-        phi_2(params["phi_2"]),
-        upsilon_1(params["upsilon_1"]),
-        upsilon_2(params["upsilon_2"]),
+        phi_vec(Rcpp::as<std::vector<double>>(params["phi"])),
+        upsilon_vec(Rcpp::as<std::vector<double>>(params["upsilon"])),
         w2_values(Rcpp::as<std::vector<double>>(params["season_offset"])),
         season_change_points(
             Rcpp::as<std::vector<double>>(params["season_change_points"])),
-        contacts(Rcpp::as<std::vector<double>>(params["contacts"])),
-        aging(Rcpp::as<std::vector<double>>(params["aging"])) {}
+        contacts_vec(Rcpp::as<std::vector<double>>(params["contacts"])),
+        aging_vec(Rcpp::as<std::vector<double>>(params["aging"])) {}
 
   void init_model() {
     // parameters
@@ -94,21 +94,24 @@ struct norovirus_model {
     // param Tensor
     param_.setValues({q1, q2, q2, q2});
 
-    // TODO: vaccination and waning
-
     // Sigma Tensor initialisation, create a diagonal matrix
-    sigma_tensor.setZero();
+    sigma.setZero();
     for (size_t i = 0; i < sigma.size(); i++) {
-      sigma_tensor(i, i) = sigma[i];
+      sigma(i, i) = sigma_vec[i];
     }
 
     // map to tensors; number of age groups is hardcoded to 4 giving 4x4
     // matrices
-    contacts_tensor =
-        Eigen::TensorMap<Eigen::Tensor<double, 2, Eigen::ColMajor>>(
-            &contacts[0], 4, 4);
-    aging_tensor = Eigen::TensorMap<Eigen::Tensor<double, 2, Eigen::ColMajor>>(
-        &aging[0], 4, 4);
+    contacts = Eigen::TensorMap<Eigen::Tensor<double, 2, Eigen::ColMajor>>(
+        &contacts_vec[0], 4, 4);
+    aging = Eigen::TensorMap<Eigen::Tensor<double, 2, Eigen::ColMajor>>(
+        &aging_vec[0], 4, 4);
+
+    // NOTE: 4 x 3 2D tensors for 4 ages and 3 vaccine strata
+    phi = Eigen::TensorMap<Eigen::Tensor<double, 2, Eigen::ColMajor>>(
+        &phi_vec[0], 4, 3);
+    upsilon = Eigen::TensorMap<Eigen::Tensor<double, 2, Eigen::ColMajor>>(
+        &upsilon_vec[0], 4, 3);
   }
 
   // add nolint flags to allow passing by reference
@@ -153,7 +156,7 @@ struct norovirus_model {
     // matrix multiply contacts x groupwise infected; result is 4 x 1
     // multiply with season coeff
     auto infection_potential =
-        contacts_tensor.contract(groupwise_infected, product_dims) *
+        contacts.contract(groupwise_infected, product_dims) *
         seasonal_term;  // dims: 4 x 1
 
     // calculate new infections and reinfections in each vaccination stratum
@@ -174,28 +177,86 @@ struct norovirus_model {
     births = births_temp.coeff();
 
     // changes in susceptibles from births and infections
-    Eigen::Tensor<double, 2> recovery_waning = (delta * x_tensor.chip(4, 0));
-    dx_tensor.chip(0, 1) = recovery_waning - new_infections;
+    dx_tensor.chip(0, 1) = (delta * x_tensor.chip(4, 0)) - new_infections;
     // births enter the unvaccinated susceptible, lowest age group only
     dx_tensor(0, 0, 0) = dx_tensor(0, 0, 0) + births;
 
-    // changes in exposed from infections
-    dx_tensor.chip(1, 1) = -(epsilon * x_tensor.chip(1, 1)) + new_infections;
+    // vaccination flows to and from susceptibles
+    // outflows from strata due to vaccination or waning
+    dx_tensor.chip(0, 1) =
+        dx_tensor.chip(0, 1) - (x_tensor.chip(0, 1) * (phi + upsilon));
+    // inflows due to waning and vaccination
+    // Inflow into S from waning of V1 and RV1
+    dx_tensor.chip(0, 1).chip(0, 1) =
+        dx_tensor.chip(0, 1).chip(0, 1) +
+        (x_tensor.chip(0, 1).chip(1, 1) *
+         upsilon.chip(1, 1).reshape(std::array<int, 2>{4, 1})) +
+        (x_tensor.chip(4, 1).chip(1, 1) * delta * gamma);
+    // Inflow into V1 from waning and vaccination
+    dx_tensor.chip(0, 1).chip(1, 1) =
+        dx_tensor.chip(0, 1).chip(1, 1) +
+        // waning of V2
+        (x_tensor.chip(0, 1).chip(2, 1) * upsilon.chip(2, 1))
+            .reshape(std::array<int, 2>{4, 1}) +
+        // vaccination of S
+        (x_tensor.chip(0, 1).chip(0, 1) * phi.chip(0, 1))
+            .reshape(std::array<int, 2>{4, 1}) +
+        // idrect waning of RV2
+        (x_tensor.chip(4, 1).chip(2, 1) * delta * gamma);
+    // Inflow into V2 from vaccination
+    dx_tensor.chip(0, 1).chip(2, 1) =
+        dx_tensor.chip(0, 1).chip(2, 1) +
+        (x_tensor.chip(0, 1).chip(1, 1) * phi.chip(1, 1))
+            .reshape(std::array<int, 2>{4, 1});
+
+    // direct flow from RV1 -> S, RV2 -> V1
+    dx_tensor.chip(0, 1).chip(0, 1) =
+
+        // changes in exposed from infections
+        dx_tensor.chip(1, 1) =
+            -(epsilon * x_tensor.chip(1, 1)) + new_infections;
 
     // changes in infectious asymptomatic
     dx_tensor.chip(2, 1) =
         (-psi * x_tensor.chip(2, 1)) +
-        (epsilon * x_tensor.chip(2, 1).contract(sigma_tensor, product_dims));
+        (epsilon * x_tensor.chip(2, 1).contract(sigma, product_dims));
 
     // changes in infectious symptomatic
     dx_tensor.chip(3, 1) =
         (psi * x_tensor.chip(2, 1)) - (gamma * x_tensor.chip(3, 1)) +
-        (epsilon *
-         x_tensor.chip(2, 1).contract(1.0 - sigma_tensor, product_dims));
+        (epsilon * x_tensor.chip(2, 1).contract(1.0 - sigma, product_dims));
     dx_tensor.chip(3, 1) = dx_tensor.chip(3, 1) + re_infections;
 
     // changes in recoveries
     dx_tensor.chip(4, 1) = (gamma * x_tensor.chip(3, 1)) - re_infections;
+
+    // vaccination flows to and from recovered
+    // outflows from strata due to vaccination or waning
+    dx_tensor.chip(4, 1) =
+        dx_tensor.chip(4, 1) - (x_tensor.chip(4, 1) * (phi + upsilon));
+    // inflows due to waning and vaccination
+    // Inflow into R from waning of RV1
+    dx_tensor.chip(4, 1).chip(0, 1) =
+        dx_tensor.chip(4, 1).chip(0, 1) +
+        x_tensor.chip(4, 1).chip(1, 1) *
+            (upsilon.chip(1, 1).reshape(std::array<int, 2>{4, 1}));
+    // Inflow into RV1 from waning and vaccination, direct outflow to S
+    dx_tensor.chip(4, 1).chip(1, 1) =
+        dx_tensor.chip(4, 1).chip(1, 1) +
+        // waning of RV2
+        (x_tensor.chip(4, 1).chip(2, 1) * upsilon.chip(2, 1))
+            .reshape(std::array<int, 2>{4, 1}) +
+        // vaccination of R
+        (x_tensor.chip(4, 1).chip(0, 1) * phi.chip(0, 1))
+            .reshape(std::array<int, 2>{4, 1}) -
+        // direct out to S
+        (x_tensor.chip(4, 1).chip(1, 1) * delta * gamma);
+    // Inflow into RV2 from vaccination, direct outflow to V1
+    dx_tensor.chip(4, 1).chip(2, 1) =
+        dx_tensor.chip(4, 1).chip(2, 1) +
+        (x_tensor.chip(4, 1).chip(1, 1) * phi.chip(1, 1))
+            .reshape(std::array<int, 2>{4, 1}) -
+        (x_tensor.chip(4, 1).chip(2, 1) * delta * gamma);
 
     // calculate background mortality in all epi compartments; uniform mortality
     // rate
@@ -207,8 +268,7 @@ struct norovirus_model {
     for (size_t i = 0; i < 3L; i++) {
       dx_tensor.slice(offsets, extents) =
           dx_tensor.slice(offsets, extents) +
-          (aging_tensor.contract(x_tensor.slice(offsets, extents),
-                                 product_dims));
+          (aging.contract(x_tensor.slice(offsets, extents), product_dims));
     }
 
     // new infections
@@ -219,23 +279,24 @@ struct norovirus_model {
   }
 };
 
-//' @title Run an age-structured SEIRS for norovirus
+//' @title Run an age-structured SEIRSV model for norovirus
 //'
-//' @param initial_conditions An integer matrix holding the initial conditions
+//' @param initial_conditions A numeric vector holding the initial conditions
 //' of the simulation. Each column should represent one compartment, in the
 //' order: susceptible, exposed, infectious and symptomatic, infectious and
 //' asymptomatic, and recovered. Two extra columns for re-infections and
-//' new infections are are required.
+//' new infections are also required.
+//' Further columns must represent the same compartments for each vaccination
+//' stratum.
 //' Rows must represent age groups.
-//' @param params A `list` object with infection parameters.
+//' @param params A `list` object with infection parameters; see the convenience
+//' function [default_parameters()].
 //' @param time_end The maximum time, defaults to 200.0.
-//' @param increment The increment time, defaults to 0.1.
+//' @param increment The increment time, defaults to 1.0.
 //' @return A two element list, where the first element is a list of matrices
 //' whose elements correspond to the numbers of individuals in each compartment
 //' as specified in the initial conditions matrix.
 //' The second list element is a vector of timesteps.
-//' Pass this to the function `epidemics:::output_to_df()` to get a `data.table`
-//' of simulation results.
 //' @export
 // [[Rcpp::export(name="noromod_cpp_boost")]]
 Rcpp::List noromod_cpp_boost(
