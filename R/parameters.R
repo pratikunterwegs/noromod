@@ -9,12 +9,23 @@ default_parameters <- function() {
   aging[row(aging) - col(aging) == 1] <- 1 / utils::head(da, -1)
   # No ageing in last group - flow out via mortality rate
 
+  # vaccination rates per age group
+  phi_1 <- c(1e-4, 0, 0, 1e-4)
+  phi_2 <- rep(0, 4)
+
+  # vaccination-derived immunity-waning per age group
+  upsilon_1 <- rep(4.4, 4)
+  upsilon_2 <- rep(0, 4)
+
+  # vaccination and waning flows
+  phi <- matrix(c(phi_1, phi_2, rep(0, 4)), nrow = 4)
+  upsilon <- matrix(c(rep(0, 4), upsilon_1, upsilon_2), nrow = 4)
+
   params <- list(
     contacts = matrix(1),
     sigma = c(0.82, 0.41, 0.41),
-    phi_1 = c(1e-4, 0, 0, 1e-4), # vector, one value per age group
-    phi_2 = c(0, 0, 0, 0),
-    upsilon = c(4.4, 0),
+    phi = phi,
+    upsilon = upsilon,
     rho = 0.05,
     season_amp = 3.6,
     season_offset = c(5.76, 0, 0, 0, 0, 0, 0),
@@ -26,9 +37,8 @@ default_parameters <- function() {
     probT_under5 = log(0.195),
     probT_over5 = log(0.039),
     b = (11.4 / 1000) / 365,
-    # background mortality must be a vector for C++ implementations
-    # NOTE: this is not age-related mortality
-    d = rep(0, length(ages)),
+    # NOTE: d is background mortality
+    d = 0,
     epsilon = 1,
     psi = 1 / 2,
     gamma = 1 / 10,
