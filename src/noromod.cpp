@@ -45,6 +45,9 @@ const double seasonal_forcing(const double &t, const double &w1,
   return z;
 }
 
+/// @brief A structure for the RHS of the ODE system. Must have an overloaded
+/// operator function to be a `FunctionObject`, allowing it to be passed to an
+/// ODE integrator from `boost::odeint`.
 struct norovirus_model {
   const double rho, b, d;  // single value for d (background mortality)
   double births = 0.0;
@@ -63,6 +66,10 @@ struct norovirus_model {
   Eigen::Tensor<double, 2> contacts, aging, phi, upsilon;
   Eigen::Tensor<double, 1> param_;
   // npi, interv, pop
+
+  /// @brief Constructor list for the norovirus model structure.
+  /// @param params A named list of model parameters; this is taken directly
+  /// from the parameter list passed from R.
   explicit norovirus_model(const Rcpp::List &params)
       : rho(params["rho"]),
         b(params["b"]),
@@ -83,6 +90,8 @@ struct norovirus_model {
         contacts_vec(Rcpp::as<std::vector<double>>(params["contacts"])),
         aging_vec(Rcpp::as<std::vector<double>>(params["aging"])) {}
 
+  /// @brief A helper function for some parameter value transformations that are
+  /// not allowed in the constructor.
   void init_model() {
     // parameters
     // w2 now processed in operator
@@ -114,10 +123,18 @@ struct norovirus_model {
         &upsilon_vec[0], 4, 3);
   }
 
-  // add nolint flags to allow passing by reference
+  // add nolint flags to prevent linting of x and dx as non-const references
+  /// @brief An overloaded operator function that represents the RHS of the ODE
+  /// system.
+  /// @param x The system state; `state_type` is an `Eigen::VectorXd`. Passed as
+  /// a non-const reference so that it can be mapped to a 3D Eigen::Tensor.
+  /// @param dx The system changes; `state_type` is an `Eigen::VectorXd`. Passed
+  /// as a non-const reference so that it can be mapped to a 3D Eigen::Tensor.
+  /// Eigen::Tensor.
+  /// @param t The system time t; required by the `boost::odeint` integrator.
   void operator()(state_type &x,   // NOLINT
                   state_type &dx,  // NOLINT
-                  const double t) {
+                  const double &t) {
     // map a tensor to the state vector with required dims (4, 7, 3)
     // for age groups, epi compartments, vaccination strata
     auto x_tensor = Eigen::TensorMap<Eigen::Tensor<double, 3, Eigen::ColMajor>>(
