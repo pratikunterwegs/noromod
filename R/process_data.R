@@ -22,12 +22,14 @@ output_to_df <- function(output) {
     compartments = c(
       "susceptible", "exposed", "infectious_symp", "infectious_asymp",
       "recovered", "reinfections", "new_infectious"
-    )
+    ),
+    vax_stratum = c("unvaccinated", "vax_one_dose", "vax_two_dose")
   )
 
   colnames(state) <- sprintf(
-    "%s_%i",
+    "%s_%s_%i",
     names_df$compartments,
+    names_df$vax_stratum,
     names_df$age_group
   )
 
