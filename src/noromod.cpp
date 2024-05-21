@@ -14,7 +14,7 @@
 // [[Rcpp::depends(RcppEigen)]]
 // [[Rcpp::depends(BH)]]
 
-typedef Eigen::VectorXd state_type;
+typedef std::vector<double> state_type;
 
 /// @brief A simple observer for the integrator
 struct observer {
@@ -53,18 +53,19 @@ struct norovirus_model {
   double births = 0.0;
   Rcpp::NumericVector sigma_vec;  // has size 3L for 3 levels of protection
   Eigen::Tensor<double, 2> sigma =
-      Eigen::Tensor<double, 2>(3, 3);  // for 3 levels of protection
+      Eigen::Tensor<double, 2> (3, 3);  // for 3 levels of protection
   const double epsilon, psi, gamma;
   double delta, w1, q1, q2;
   double seasonal_term = 0.0;
   const std::vector<double> w2_values, season_change_points;
-  std::vector<double> contacts_vec,
-      aging_vec;  // cannot be const as mapped to Tensor
-
+  
+  std::vector<double> contacts_vec, aging_vec;
   // vaccination rate and vaccine-immunity waning rate
   std::vector<double> phi_vec, upsilon_vec;
-  Eigen::Tensor<double, 2> contacts, aging, phi, upsilon;
-  Eigen::Tensor<double, 1> param_;
+  
+  Eigen::Tensor<double, 2> contacts, aging = Eigen::Tensor<double, 2> (4, 4);
+  Eigen::Tensor<double, 2> phi, upsilon = Eigen::Tensor<double, 2> (4, 3);
+  Eigen::Tensor<double, 1> param_ = Eigen::Tensor<double, 1>(4);
   // npi, interv, pop
 
   /// @brief Constructor list for the norovirus model structure.
@@ -105,7 +106,7 @@ struct norovirus_model {
 
     // Sigma Tensor initialisation, create a diagonal matrix
     sigma.setZero();
-    for (size_t i = 0; i < sigma.size(); i++) {
+    for (size_t i = 0; i < sigma_vec.size(); i++) {
       sigma(i, i) = sigma_vec[i];
     }
 
