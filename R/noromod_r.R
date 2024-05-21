@@ -61,12 +61,11 @@ norovirus_model_r <- function(t, state, parameters) {
   aging <- parameters[["aging"]]
 
   # vaccination rates
-  phi_1 <- parameters[["phi_1"]]
-  phi_2 <- parameters[["phi_2"]]
+  phi <- parameters[["phi"]]
 
   # waning rates
-  upsilon_1 <- 1 / (parameters[["upsilon"]][1] * 365)
-  upsilon_2 <- 1 / (parameters[["upsilon"]][2] * 365)
+  upsilon <- 1 / (parameters[["upsilon"]] * 365)
+  upsilon[is.infinite(upsilon)] <- 0
 
   # contact matrix
   cm <- parameters[["contacts"]]
@@ -102,56 +101,63 @@ norovirus_model_r <- function(t, state, parameters) {
   # create empty array of the dimensions of state
   dState <- array(0, dim = dim(state))
 
-  # waning immunity: δ*R + aging out: aging * S - background deaths: d*S
+  # waning immunity: δ*R + aging out: aging * S
   # change in susceptibles
   dState[, 1, ] <- (delta * state[, 5L, ]) + (aging %*% state[, 1L, ]) -
-    new_infections - (state[, 1, ] * d)
+    new_infections
   dState[, 1, 1] <- dState[, 1, 1] + births
 
   # account for vaccinations and vaccine immunity waning in and out
-  dS_vax_out <- state[, 1, ] * matrix(c(phi_1, phi_2, rep(0, 4)), nrow = 4)
-  dS_waning_out <- state[, 1, ] *
-    matrix(c(rep(0, 4), upsilon_1, upsilon_2), nrow = 4)
+  dS_vax_out <- state[, 1, ] * phi
+  dS_waning_out <- state[, 1, ] * upsilon
 
   dState[, 1, ] <- dState[, 1, ] - (dS_vax_out + dS_waning_out) +
     dS_vax_out[, c(3, 1, 2)] + dS_waning_out[, c(2, 3, 1)]
 
+  # direct waning from RV1 and RV2
+  dState[, 1, c(1, 2)] <- dState[, 1, c(1, 2)] +
+    (state[, 5, c(2, 3)] * delta * gamma)
+
   # exposed to infectious: ɛ*E + aging out: aging * E
   # change in exposed
-  dState[, 2, ] <- (epsilon * state[, 2L, ]) + (aging %*% state[, 2L, ]) +
-    new_infections - (state[, 2, ] * d)
+  dState[, 2, ] <- -(epsilon * state[, 2L, ]) + (aging %*% state[, 2L, ]) +
+    new_infections
 
   # symptomatic to asymptomatic: ψ*Is + # aging out: aging * Is +
   # exposed to infectious symptomatic: ɛ*σ*E
   # change in infectious symptomatic
   dState[, 3, ] <- -(psi * state[, 3L, ]) + (aging %*% state[, 3L, ]) +
-    (state[, 2, ] %*% diag(sigma * epsilon)) -
-    (state[, 3, ] * d)
+    (epsilon * state[, 2, ] %*% diag(sigma))
 
   # symptomatic to asymptomatic: ψ*Is - recovery: γ*Ia + aging out: aging * Ia
   # exposed to infectious asymptomatic: ɛ*(1-σ)*E
   # change in infectious asymptomatic
   dState[, 4, ] <- (psi * state[, 3L, ]) - (gamma * state[, 4L, ]) +
     (aging %*% state[, 4L, ]) + re_infections +
-    (state[, 2, ] %*% diag((1 - sigma) * epsilon)) -
-    (state[, 4, ] * d)
+    (epsilon * state[, 2, ] %*% diag((1 - sigma)))
 
   # recovery: γ*Ia + aging out: aging * R
   # change in recovered
   dState[, 5, ] <- (gamma * state[, 4L, ]) + (aging %*% state[, 5L, ]) -
-    re_infections - (state[, 5, ] * d)
+    re_infections
 
   # account for vaccinations and vaccine immunity waning in and out
-  dR_vax_out <- state[, 5, ] * matrix(c(phi_1, phi_2, rep(0, 4)), nrow = 4)
-  dR_waning_out <- state[, 5, ] *
-    matrix(c(rep(0, 4), upsilon_1, upsilon_2), nrow = 4)
+  dR_vax_out <- state[, 5, ] * phi
+  dR_waning_out <- state[, 5, ] * upsilon
 
   dState[, 5, ] <- dState[, 5, ] - (dR_vax_out + dR_waning_out) +
     dR_vax_out[, c(3, 1, 2)] + dR_waning_out[, c(2, 3, 1)]
 
+  # direct waning to S and SV1
+  dState[, 5, c(2, 3)] <- dState[, 5, c(2, 3)] -
+    (state[, 5, c(2, 3)] * delta * gamma)
+
   # store new infections and re-infections
   dState[, 6, ] <- new_infections
   dState[, 7, ] <- re_infections
+
+  # background mortality in all epi compartments in all vax strata
+  dState[, 1:5, ] <- dState[, 1:5, ] - (state[, 1:5, ] * d)
 
   # return in the same order as state
   return(list(c(dState)))
