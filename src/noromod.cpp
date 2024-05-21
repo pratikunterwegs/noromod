@@ -69,7 +69,6 @@ struct norovirus_model {
   Eigen::Tensor<double, 2> contacts, aging = Eigen::Tensor<double, 2>(4, 4);
   Eigen::Tensor<double, 2> phi, upsilon = Eigen::Tensor<double, 2>(4, 3);
   Eigen::Tensor<double, 1> param_ = Eigen::Tensor<double, 1>(4);
-  // npi, interv, pop
 
   /// @brief Constructor list for the norovirus model structure.
   /// @param params A named list of model parameters; this is taken directly
@@ -177,6 +176,7 @@ struct norovirus_model {
     // matrix multiply contacts x groupwise infected; result is 4 x 1
     // multiply with season coeff
     auto infection_potential =
+        param_.reshape(std::array<int, 2>{4, 1}) *
         contacts.contract(groupwise_infected, product_dims) *
         seasonal_term;  // dims: 4 x 1
 
@@ -237,8 +237,8 @@ struct norovirus_model {
     // changes in infectious symptomatic
     dx_tensor.chip(3, 1) =
         (psi * x_tensor.chip(2, 1)) - (gamma * x_tensor.chip(3, 1)) +
-        (epsilon * x_tensor.chip(2, 1).contract(1.0 - sigma, product_dims));
-    dx_tensor.chip(3, 1) = dx_tensor.chip(3, 1) + re_infections;
+        (epsilon * x_tensor.chip(2, 1).contract(1.0 - sigma, product_dims)) +
+        re_infections;
 
     // changes in recoveries
     dx_tensor.chip(4, 1) = (gamma * x_tensor.chip(3, 1)) - re_infections;
