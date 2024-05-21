@@ -28,6 +28,9 @@ struct observer {
            std::vector<double> &times)       // NOLINT
       : m_states(states), m_times(times) {}
 
+  /// @brief Overloaded operator for the observer structure
+  /// @param x The current system state x.
+  /// @param t The current system time t.
   void operator()(const state_type &x, double t) {
     m_states.push_back(x);
     m_times.push_back(t);
@@ -53,18 +56,18 @@ struct norovirus_model {
   double births = 0.0;
   Rcpp::NumericVector sigma_vec;  // has size 3L for 3 levels of protection
   Eigen::Tensor<double, 2> sigma =
-      Eigen::Tensor<double, 2> (3, 3);  // for 3 levels of protection
+      Eigen::Tensor<double, 2>(3, 3);  // for 3 levels of protection
   const double epsilon, psi, gamma;
   double delta, w1, q1, q2;
   double seasonal_term = 0.0;
   const std::vector<double> w2_values, season_change_points;
-  
+
   std::vector<double> contacts_vec, aging_vec;
   // vaccination rate and vaccine-immunity waning rate
   std::vector<double> phi_vec, upsilon_vec;
-  
-  Eigen::Tensor<double, 2> contacts, aging = Eigen::Tensor<double, 2> (4, 4);
-  Eigen::Tensor<double, 2> phi, upsilon = Eigen::Tensor<double, 2> (4, 3);
+
+  Eigen::Tensor<double, 2> contacts, aging = Eigen::Tensor<double, 2>(4, 4);
+  Eigen::Tensor<double, 2> phi, upsilon = Eigen::Tensor<double, 2>(4, 3);
   Eigen::Tensor<double, 1> param_ = Eigen::Tensor<double, 1>(4);
   // npi, interv, pop
 
