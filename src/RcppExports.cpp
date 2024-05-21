@@ -11,26 +11,13 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// norovirus_model_cpp
-Rcpp::List norovirus_model_cpp(const double& t, Eigen::VectorXd& state, const Rcpp::List& parameters);
-RcppExport SEXP _noromod_norovirus_model_cpp(SEXP tSEXP, SEXP stateSEXP, SEXP parametersSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const double& >::type t(tSEXP);
-    Rcpp::traits::input_parameter< Eigen::VectorXd& >::type state(stateSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::List& >::type parameters(parametersSEXP);
-    rcpp_result_gen = Rcpp::wrap(norovirus_model_cpp(t, state, parameters));
-    return rcpp_result_gen;
-END_RCPP
-}
 // noromod_cpp_boost
-Rcpp::List noromod_cpp_boost(const Eigen::MatrixXd& initial_conditions, const Rcpp::List& params, const double& time_end, const double& increment);
+Rcpp::List noromod_cpp_boost(Rcpp::NumericVector& initial_conditions, const Rcpp::List& params, const double& time_end, const double& increment);
 RcppExport SEXP _noromod_noromod_cpp_boost(SEXP initial_conditionsSEXP, SEXP paramsSEXP, SEXP time_endSEXP, SEXP incrementSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type initial_conditions(initial_conditionsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector& >::type initial_conditions(initial_conditionsSEXP);
     Rcpp::traits::input_parameter< const Rcpp::List& >::type params(paramsSEXP);
     Rcpp::traits::input_parameter< const double& >::type time_end(time_endSEXP);
     Rcpp::traits::input_parameter< const double& >::type increment(incrementSEXP);
@@ -40,7 +27,6 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_noromod_norovirus_model_cpp", (DL_FUNC) &_noromod_norovirus_model_cpp, 3},
     {"_noromod_noromod_cpp_boost", (DL_FUNC) &_noromod_noromod_cpp_boost, 4},
     {NULL, NULL, 0}
 };

@@ -2,32 +2,33 @@
 % Please edit documentation in R/RcppExports.R
 \name{noromod_cpp_boost}
 \alias{noromod_cpp_boost}
-\title{Run an age-structured SEIRS for norovirus}
+\title{Run an age-structured SEIRSV model for norovirus}
 \usage{
 noromod_cpp_boost(initial_conditions, params, time_end = 200, increment = 1)
 }
 \arguments{
-\item{initial_conditions}{An integer matrix holding the initial conditions
+\item{initial_conditions}{A numeric vector holding the initial conditions
 of the simulation. Each column should represent one compartment, in the
 order: susceptible, exposed, infectious and symptomatic, infectious and
 asymptomatic, and recovered. Two extra columns for re-infections and
-new infections are are required.
+new infections are also required.
+Further columns must represent the same compartments for each vaccination
+stratum.
 Rows must represent age groups.}
 
-\item{params}{A \code{list} object with infection parameters.}
+\item{params}{A \code{list} object with infection parameters; see the convenience
+function \code{\link[=default_parameters]{default_parameters()}}.}
 
 \item{time_end}{The maximum time, defaults to 200.0.}
 
-\item{increment}{The increment time, defaults to 0.1.}
+\item{increment}{The increment time, defaults to 1.0.}
 }
 \value{
 A two element list, where the first element is a list of matrices
 whose elements correspond to the numbers of individuals in each compartment
 as specified in the initial conditions matrix.
 The second list element is a vector of timesteps.
-Pass this to the function \code{epidemics:::output_to_df()} to get a \code{data.table}
-of simulation results.
 }
 \description{
-Run an age-structured SEIRS for norovirus
+Run an age-structured SEIRSV model for norovirus
 }

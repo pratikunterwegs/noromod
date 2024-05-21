@@ -2,7 +2,6 @@
 
 export(default_parameters)
 export(noromod_cpp_boost)
-export(norovirus_model_cpp)
 export(norovirus_model_r)
 export(output_to_df)
 import(RcppEigen)
