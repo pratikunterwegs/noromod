@@ -309,16 +309,12 @@ struct norovirus_model {
 //' @export
 // [[Rcpp::export(name="noromod_cpp_boost")]]
 Rcpp::List noromod_cpp_boost(
-    Eigen::VectorXd &initial_conditions,  // NOLINT
+    Rcpp::NumericVector &initial_conditions,  // NOLINT
     const Rcpp::List &params,
     const double &time_end = 200.0,  // double required by boost solver
     const double &increment = 1.0) {
   // initial conditions from input
-  state_type x = initial_conditions;
-
-  // map to an Eigen Tensor
-  auto state3d = Eigen::TensorMap<Eigen::Tensor<double, 3, Eigen::ColMajor>>(
-      &initial_conditions[0], 2, 2, 3);
+  state_type x = Rcpp::as<std::vector<double>>(initial_conditions);
 
   // create a default epidemic with parameters
   norovirus_model this_model(params);
@@ -329,10 +325,7 @@ Rcpp::List noromod_cpp_boost(
   std::vector<double> times;
 
   // a controlled stepper for constant step sizes
-  boost::numeric::odeint::runge_kutta4<
-      state_type, double, state_type, double,
-      boost::numeric::odeint::vector_space_algebra>
-      stepper;
+  boost::numeric::odeint::runge_kutta4<state_type> stepper;
 
   // run the function without assignment
   boost::numeric::odeint::integrate_const(stepper, this_model, x, 0.0, time_end,
