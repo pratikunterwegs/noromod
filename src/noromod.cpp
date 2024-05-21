@@ -195,7 +195,7 @@ struct norovirus_model {
     births = births_temp.coeff();
 
     // changes in susceptibles from births and infections
-    dx_tensor.chip(0, 1) = (delta * x_tensor.chip(4, 0)) - new_infections;
+    dx_tensor.chip(0, 1) = (delta * x_tensor.chip(4, 1)) - new_infections;
     // births enter the unvaccinated susceptible, lowest age group only
     dx_tensor(0, 0, 0) = dx_tensor(0, 0, 0) + births;
 
@@ -207,32 +207,24 @@ struct norovirus_model {
     // Inflow into S from waning of V1 and RV1
     dx_tensor.chip(0, 1).chip(0, 1) =
         dx_tensor.chip(0, 1).chip(0, 1) +
-        (x_tensor.chip(0, 1).chip(1, 1) *
-         upsilon.chip(1, 1).reshape(std::array<int, 2>{4, 1})) +
-        (x_tensor.chip(4, 1).chip(1, 1) * delta * gamma);
+        (x_tensor.chip(0, 1).chip(1, 1) * upsilon.chip(1, 1)) +
+        (x_tensor.chip(4, 1).chip(1, 1) * delta * gamma);  // direct from RV1
     // Inflow into V1 from waning and vaccination
     dx_tensor.chip(0, 1).chip(1, 1) =
         dx_tensor.chip(0, 1).chip(1, 1) +
         // waning of V2
-        (x_tensor.chip(0, 1).chip(2, 1) * upsilon.chip(2, 1))
-            .reshape(std::array<int, 2>{4, 1}) +
+        (x_tensor.chip(0, 1).chip(2, 1) * upsilon.chip(2, 1)) +
         // vaccination of S
-        (x_tensor.chip(0, 1).chip(0, 1) * phi.chip(0, 1))
-            .reshape(std::array<int, 2>{4, 1}) +
-        // idrect waning of RV2
+        (x_tensor.chip(0, 1).chip(0, 1) * phi.chip(0, 1)) +
+        // direct waning of RV2
         (x_tensor.chip(4, 1).chip(2, 1) * delta * gamma);
     // Inflow into V2 from vaccination
     dx_tensor.chip(0, 1).chip(2, 1) =
         dx_tensor.chip(0, 1).chip(2, 1) +
-        (x_tensor.chip(0, 1).chip(1, 1) * phi.chip(1, 1))
-            .reshape(std::array<int, 2>{4, 1});
+        (x_tensor.chip(0, 1).chip(1, 1) * phi.chip(1, 1));
 
-    // direct flow from RV1 -> S, RV2 -> V1
-    dx_tensor.chip(0, 1).chip(0, 1) =
-
-        // changes in exposed from infections
-        dx_tensor.chip(1, 1) =
-            -(epsilon * x_tensor.chip(1, 1)) + new_infections;
+    // changes in exposed
+    dx_tensor.chip(1, 1) = -(epsilon * x_tensor.chip(1, 1)) + new_infections;
 
     // changes in infectious asymptomatic
     dx_tensor.chip(2, 1) =
@@ -256,24 +248,20 @@ struct norovirus_model {
     // Inflow into R from waning of RV1
     dx_tensor.chip(4, 1).chip(0, 1) =
         dx_tensor.chip(4, 1).chip(0, 1) +
-        x_tensor.chip(4, 1).chip(1, 1) *
-            (upsilon.chip(1, 1).reshape(std::array<int, 2>{4, 1}));
+        x_tensor.chip(4, 1).chip(1, 1) * upsilon.chip(1, 1);
     // Inflow into RV1 from waning and vaccination, direct outflow to S
     dx_tensor.chip(4, 1).chip(1, 1) =
         dx_tensor.chip(4, 1).chip(1, 1) +
         // waning of RV2
-        (x_tensor.chip(4, 1).chip(2, 1) * upsilon.chip(2, 1))
-            .reshape(std::array<int, 2>{4, 1}) +
+        (x_tensor.chip(4, 1).chip(2, 1) * upsilon.chip(2, 1)) +
         // vaccination of R
-        (x_tensor.chip(4, 1).chip(0, 1) * phi.chip(0, 1))
-            .reshape(std::array<int, 2>{4, 1}) -
+        (x_tensor.chip(4, 1).chip(0, 1) * phi.chip(0, 1)) -
         // direct out to S
         (x_tensor.chip(4, 1).chip(1, 1) * delta * gamma);
     // Inflow into RV2 from vaccination, direct outflow to V1
     dx_tensor.chip(4, 1).chip(2, 1) =
         dx_tensor.chip(4, 1).chip(2, 1) +
-        (x_tensor.chip(4, 1).chip(1, 1) * phi.chip(1, 1))
-            .reshape(std::array<int, 2>{4, 1}) -
+        (x_tensor.chip(4, 1).chip(1, 1) * phi.chip(1, 1)) -
         (x_tensor.chip(4, 1).chip(2, 1) * delta * gamma);
 
     // calculate background mortality in all epi compartments; uniform mortality
