@@ -274,10 +274,11 @@ struct norovirus_model {
 
     // apply aging-related flows to all compartments and all vaccination strata
     // NOTE: dx = x + aging; aging matrix coeffs have appropriate signs
-    for (size_t i = 0; i < 3L; i++) {
-      dx_tensor.slice(offsets, extents) =
-          dx_tensor.slice(offsets, extents) +
-          (aging.contract(x_tensor.slice(offsets, extents), product_dims));
+    // hardcoded to 5 columns over three strata; last 2 cols are bookkeeping
+    for (size_t i = 0; i < 5L; i++) {
+      dx_tensor.chip(i, 1) =
+          dx_tensor.chip(i, 1) +
+          (aging.contract(x_tensor.chip(i, 1), product_dims));
     }
 
     // new infections
