@@ -53,9 +53,9 @@ library(deSolve)
 init <- c(
   3857263, 8103718, 42460865, 12374961,
   100, 0, 0, 0,
+  10, 0, 0, 0,
   0, 0, 0, 0,
-  0, 0, 0, 0,
-  0, 0, 0, 0,
+  1000, 0, 0, 0,
   0, 0, 0, 0,
   0, 0, 0, 0
 )
@@ -99,6 +99,7 @@ data <- as.data.frame(
   deSolve::lsoda(init_mat, times, norovirus_model_r, params)
 )
 
+# plotting new exposures
 plot(rowSums(data[, seq(6, 9)]), type = "l")
 ```
 
@@ -108,7 +109,7 @@ plot(rowSums(data[, seq(6, 9)]), type = "l")
 # Using Boost solvers for increased speed
 # run model
 data <- noromod_cpp_boost(
-  initial_conditions = init_mat,
+  initial_conditions = c(init_mat),
   params = params, time_end = 11000, increment = 1
 )
 
