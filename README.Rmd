@@ -53,13 +53,13 @@ library(deSolve)
 # define parameters
 # initial conditions
 init <- c(
-  3857263, 8103718, 42460865, 12374961,
-  100, 0, 0, 0,
-  100, 0, 0, 0,
-  99, 0, 0, 0,
-  0, 0, 0, 0,
-  0, 0, 0, 0,
-  0, 0, 0, 0
+  3857263, 8103718, 42460865, 12374961, # S
+  100, 0, 0, 0, # E
+  100, 0, 0, 0, # Is
+  99, 0, 0, 0, # Ia
+  0, 0, 0, 0, # R
+  0, 0, 0, 0, # new infections
+  0, 0, 0, 0 # reinfections
 )
 init_vax1 <- matrix(0, nrow = 4, ncol = 7)
 init_vax2 <- init_vax1
@@ -101,7 +101,8 @@ data <- as.data.frame(
   deSolve::lsoda(init_mat, times, norovirus_model_r, params)
 )
 
-plot(rowSums(data[, seq(6, 9)]), type = "l")
+plot(rowSums(data[, seq(6, 9) + 28]), type = "l")
+lines(rowSums(data[, seq(6, 9) + (28 * 2)]), type = "l", col = 2)
 ```
 
 ### Using Boost solvers
