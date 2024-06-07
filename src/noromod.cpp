@@ -371,12 +371,49 @@ struct norovirus_model {
                   reinfections + (aging * x.col(4)).array() +
                   (upsilon_1 * x.col(11).array()) -  // RV1 -> R
                   (phi_1 * x.col(4).array());        // R -> RV1
+
+    // change in vaccinated one dose
+    dxdt.col(7) = -new_infections_v1 + (aging * x.col(7)).array() +
+                  (phi_1 * x.col(0).array()) +               // S -> SV1
+                  (upsilon_2 * x.col(14).array()) +          // SV2 -> SV1
+                  (delta * upsilon_2 * x.col(18).array()) -  // RV2 -> SV1
+                  (phi_2 * x.col(7).array()) -               // SV1 -> SV2
+                  (upsilon_1 * x.col(7).array());            // SV1 -> S
+
+    // change in exposed
+    dxdt.col(8) = new_infections_v1 + (aging * x.col(8)).array() -
+                  (epsilon * x.col(8).array());  // EV -> IsV1 + IaV1
+    // change in infectious symptomatic
+    dxdt.col(9) = (epsilon * sigma_v1 * x.col(8).array()) -  // EV1 -> IsV1
+                  (psi * x.col(9).array()) +                 // IsV1 -> IaV1
+                  (aging * x.col(9)).array();
+
+    // change in infectious asymptomatic
+    dxdt.col(10) =
+        (epsilon * (1.0 - sigma_v1) * x.col(8).array()) +  // EV1 -> IaV1
+        (psi * x.col(9).array()) -                         // IsV1 -> IaV1
+        (gamma * x.col(10).array()) +                      // IaV1 -> RV1
+        reinfections_v1 +                                  // RV1 -> IaV1
+        (aging * x.col(10)).array();
+
+    // change in recovered
+    dxdt.col(11) = (gamma * x.col(10).array()) -  // Ia -> R
+                   (delta * x.col(11).array()) -  // R -> S
+                   reinfections_v1 + (aging * x.col(11)).array() -
+                   (upsilon_1 * x.col(11).array()) -            // RV1 -> R
+                   (phi_2 * x.col(11).array()) -                // RV1 -> RV2
+                   (x.col(11).array() * (delta * upsilon_1)) +  // RV1 -> S
+                   (phi_1 * x.col(4).array()) +                 // R -> RV1
+                   (upsilon_2 * x.col(18).array());             // RV2 -> RV1
+
     // mortality in all compartments
     dxdt(Eigen::all, epi_indices) =
         dxdt(Eigen::all, epi_indices) * (1.0 - d[0]);
     // change in new infections and re-infections
     dxdt.col(5) = new_infections;
     dxdt.col(6) = reinfections;
+    dxdt.col(12) = new_infections_v1;
+    dxdt.col(13) = reinfections_v1;
   }
 };
 
