@@ -1,5 +1,7 @@
 ---
 output: github_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
@@ -53,8 +55,8 @@ library(deSolve)
 init <- c(
   3857263, 8103718, 42460865, 12374961,
   100, 0, 0, 0,
-  0, 0, 0, 0,
-  0, 0, 0, 0,
+  100, 0, 0, 0,
+  99, 0, 0, 0,
   0, 0, 0, 0,
   0, 0, 0, 0,
   0, 0, 0, 0
@@ -114,18 +116,21 @@ data <- noromod_cpp_boost(
 
 data <- do.call(rbind, lapply(data[["x"]], as.vector))
 
-plot(rowSums(data[, seq(5, 8)]), type = "l")
+# plot vaccination strata exposed (adding unvaccinated distorts plot scale)
+plot(rowSums(data[, seq(5, 8) + (28 * 1)]), type = "l")
+lines(rowSums(data[, seq(5, 8) + (28 * 2)]), type = "l", col = 2)
 ```
 
 ### Speed comparison
 
 ```{r}
+times <- seq(11000)
 microbenchmark::microbenchmark(
-  "noromod_r" = deSolve::lsoda(init, times, norovirus_model_r, params),
-  "noromod_cpp" = deSolve::lsoda(init, times, norovirus_model_cpp, params),
+  "noromod_r" = deSolve::lsoda(init_mat, times, norovirus_model_r, params),
   "noromod_cpp_boost" = noromod_cpp_boost(
     initial_conditions = init_mat,
     params = params, time_end = max(times), increment = 1
-  )
+  ),
+  times = 10
 )
 ```
