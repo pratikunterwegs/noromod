@@ -26,7 +26,9 @@ norovirus_model_r <- function(t, state, parameters) {
   n_age_groups <- parameters[["n_age_groups"]]
 
   # compartmental structure
-  # S|E|Ia|Is|R|V1|Ev1|Iav1|Isv1|Rv1|V2|Ev2|Iav2|Isv2|Rv2
+  # S|E|Ia|Is|R|new_infections|re_infections
+  # V1|Ev1|Iav1|Isv1|Rv1|new_infections_v1|reinfections_v1
+  # V2|Ev2|Iav2|Isv2|Rv2|new_infections_v2|reinfections_v2
 
   # hardcoding the number of columns
   state <- matrix(
@@ -39,21 +41,21 @@ norovirus_model_r <- function(t, state, parameters) {
   infect_asymp <- state[, 4]
   recovered <- state[, 5]
 
-  vax_1 <- state[, 6]
-  exposed_v1 <- state[, 7]
-  infect_symp_v1 <- state[, 8]
-  infect_asymp_v1 <- state[, 9]
-  recovered_v1 <- state[, 10]
+  vax_1 <- state[, 8]
+  exposed_v1 <- state[, 9]
+  infect_symp_v1 <- state[, 10]
+  infect_asymp_v1 <- state[, 11]
+  recovered_v1 <- state[, 12]
 
-  vax_2 <- state[, 11]
-  exposed_v2 <- state[, 12]
-  infect_symp_v2 <- state[, 13]
-  infect_asymp_v2 <- state[, 14]
-  recovered_v2 <- state[, 15]
+  vax_2 <- state[, 15]
+  exposed_v2 <- state[, 16]
+  infect_symp_v2 <- state[, 17]
+  infect_asymp_v2 <- state[, 18]
+  recovered_v2 <- state[, 19]
 
   # count the total population as the sum of the first five columns
   # hardcoding the number of epidemiological compartments - S,E,Is,Ia,R
-  total_pop <- rowSums(state[, seq(15)])
+  total_pop <- rowSums(state[, c(1:5, 8:12, 15:19)])
 
   # some parameters
   delta <- 1 / (parameters[["D_immun"]] * 365)
@@ -80,9 +82,8 @@ norovirus_model_r <- function(t, state, parameters) {
   phi_2 <- parameters[["phi_2"]]
 
   # waning rates
-  upsilon_1 <- 1 / (parameters[["upsilon"]][1] * 365)
-  upsilon_2 <- 1 / (parameters[["upsilon"]][2] * 365)
-  if (is.infinite(upsilon_2)) upsilon_2 <- 0.0
+  upsilon_1 <- parameters[["upsilon"]][1]
+  upsilon_2 <- parameters[["upsilon"]][2]
 
   # contact matrix
   cm <- parameters[["contacts"]]
@@ -175,11 +176,8 @@ norovirus_model_r <- function(t, state, parameters) {
     (recovered_v2 * (delta * upsilon_2))
 
   return(list(c(
-    dS, dE, dIs, dIa, dR,
-    dV1, dEv1, dIsv1, dIav1, dRv1,
-    dV2, dEv2, dIsv2, dIav2, dRv2,
-    re_infections, new_infections,
-    re_infections_v1, new_infections_v1,
-    re_infections_v2, new_infections_v2
+    dS, dE, dIs, dIa, dR, re_infections, new_infections,
+    dV1, dEv1, dIsv1, dIav1, dRv1, re_infections_v1, new_infections_v1,
+    dV2, dEv2, dIsv2, dIav2, dRv2, re_infections_v2, new_infections_v2
   )))
 }
