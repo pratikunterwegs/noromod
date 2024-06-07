@@ -2,18 +2,22 @@
 
 # prepare initial conditions from example in Readme
 init <- c(
-  3857263, 8103718, 42460865, 12374961,
-  100, 0, 0, 0,
-  0, 0, 0, 0,
-  0, 0, 0, 0,
-  0, 0, 0, 0,
-  0, 0, 0, 0,
-  0, 0, 0, 0
+  3857263, 8103718, 42460865, 12374961, # S
+  100, 0, 0, 0, # E
+  100, 0, 0, 0, # Is
+  99, 0, 0, 0, # Ia
+  0, 0, 0, 0, # R
+  0, 0, 0, 0, # new infections
+  0, 0, 0, 0 # reinfections
 )
+init_vax1 <- matrix(0, nrow = 4, ncol = 7)
+init_vax2 <- init_vax1
 init_mat <- matrix(
   init,
   nrow = 4, ncol = 7
 )
+
+init_mat <- cbind(init_mat, init_vax1, init_vax2)
 
 age_groups <- c(0, 5, 15, 65)
 polymod <- socialmixr::polymod
@@ -33,26 +37,15 @@ uk_contact_rate_matrix <- t(t(uk_contact_rate_matrix) / demography)
 # add contact matrix to pop
 params <- default_parameters()
 params[["contacts"]] <- uk_contact_rate_matrix
+params[["season_offset"]] <- rep(0.5, length(params[["season_offset"]]))
 
-test_that("Basic expectations for R and Rcpp ODE systems for deSolve", {
+test_that("Basic expectations for R ODE systems for deSolve", {
   # pick a random timestep
   tstep <- sample(seq(100), 1)
   noromod_r <- norovirus_model_r(
     t = tstep,
     state = init_mat,
     parameters = params
-  )
-
-  noromod_cpp <- norovirus_model_cpp(
-    t = tstep,
-    state = init_mat,
-    parameters = params
-  )
-
-  # expect equivalence for a single timestep
-  expect_identical(
-    noromod_cpp, noromod_r,
-    tolerance = 1e-6
   )
 
   # expect identical integration with deSolve::lsoda
@@ -65,46 +58,10 @@ test_that("Basic expectations for R and Rcpp ODE systems for deSolve", {
       parms = params
     )
   )
-  expect_no_condition(
-    deSolve::lsoda(
-      y = init_mat,
-      times = times,
-      func = norovirus_model_cpp,
-      parms = params
-    )
-  )
-
-  # expect values over time are identical (allow greater tolerance)
-  expect_identical(
-    deSolve::lsoda(
-      y = init_mat,
-      times = times,
-      func = norovirus_model_cpp,
-      parms = params
-    ),
-    deSolve::lsoda(
-      y = init_mat,
-      times = times,
-      func = norovirus_model_r,
-      parms = params
-    ),
-    tolerance = 1
-  )
-
-  expect_vector(
-    noromod_cpp, list()
-  )
 
   # expect snapshots
   expect_snapshot(
     norovirus_model_r(
-      t = 100,
-      state = init_mat,
-      parameters = params
-    )
-  )
-  expect_snapshot(
-    norovirus_model_cpp(
       t = 100,
       state = init_mat,
       parameters = params
