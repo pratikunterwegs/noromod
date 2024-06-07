@@ -348,23 +348,29 @@ struct norovirus_model {
     // compartmental transitions, refer to R/noromod_r.R
     // NOTE: see branch `array_vax` for an implementation using Eigen::Tensor
     // change in susceptibles
-    dxdt.col(0) = births + (delta * x.col(4).array()) - new_infections +
-                  (aging * x.col(0)).array() + (upsilon_1 * x.col(7).array()) +
-                  (x.col(11).array() * (delta * upsilon_1));
+    dxdt.col(0) = births - new_infections + (aging * x.col(0)).array() +
+                  (delta * x.col(4).array()) -                // R -> S
+                  (phi_1 * x.col(0).array()) +                // S -> SV1
+                  (upsilon_1 * x.col(7).array()) +            // SV1 -> S
+                  (x.col(11).array() * (delta * upsilon_1));  // RV1 -> S
     // change in exposed
-    dxdt.col(1) = new_infections - (epsilon * x.col(1).array()) +
-                  (aging * x.col(1)).array();
+    dxdt.col(1) = new_infections + (aging * x.col(1)).array() -
+                  (epsilon * x.col(1).array());  // E -> Is + Ia
     // change in infectious symptomatic
-    dxdt.col(2) = (epsilon * sigma_v0 * x.col(1).array()) -
-                  (psi * x.col(2).array()) + (aging * x.col(2)).array();
+    dxdt.col(2) = (epsilon * sigma_v0 * x.col(1).array()) -  // E -> Is
+                  (psi * x.col(2).array()) +                 // Is -> Ia
+                  (aging * x.col(2)).array();
     // change in infectious asymptomatic
-    dxdt.col(3) = (epsilon * (1.0 - sigma_v0) * x.col(1).array()) +
-                  (psi * x.col(2).array()) - (gamma * x.col(3).array()) +
+    dxdt.col(3) = (epsilon * (1.0 - sigma_v0) * x.col(1).array()) +  // E -> Ia
+                  (psi * x.col(2).array()) -                         // Is -> Ia
+                  (gamma * x.col(3).array()) +                       // Ia -> R
                   reinfections + (aging * x.col(3)).array();
     // change in recovered
-    dxdt.col(4) = (gamma * x.col(3).array()) - (delta * x.col(4).array()) -
+    dxdt.col(4) = (gamma * x.col(3).array()) -  // Ia -> R
+                  (delta * x.col(4).array()) -  // R -> S
                   reinfections + (aging * x.col(4)).array() +
-                  (upsilon_1 * x.col(11).array()) - (phi_1 * x.col(4).array());
+                  (upsilon_1 * x.col(11).array()) -  // RV1 -> R
+                  (phi_1 * x.col(4).array());        // R -> RV1
     // mortality in all compartments
     dxdt(Eigen::all, epi_indices) =
         dxdt(Eigen::all, epi_indices) * (1.0 - d[0]);
