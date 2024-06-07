@@ -9,7 +9,7 @@ default_parameters <- function() {
   aging[row(aging) - col(aging) == 1] <- 1 / utils::head(da, -1)
   # No ageing in last group - flow out via mortality rate
 
-  upsilon <- c(4.4, 0.0)
+  upsilon <- c(4.4, 4.4)
   upsilon <- 1 / (upsilon * 365)
   upsilon[is.infinite(upsilon)] <- 0.0
 
@@ -17,7 +17,7 @@ default_parameters <- function() {
     contacts = matrix(1),
     sigma = c(0.82, 0.41, 0.41),
     phi_1 = c(1e-4, 0, 0, 1e-4), # vector, one value per age group
-    phi_2 = c(0, 0, 0, 0),
+    phi_2 = c(1e-4, 0, 0, 1e-4),
     upsilon = upsilon,
     rho = 0.05,
     season_amp = 3.6,
