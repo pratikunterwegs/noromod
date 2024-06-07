@@ -43,13 +43,13 @@ library(deSolve)
 # define parameters
 # initial conditions
 init <- c(
-  3857263, 8103718, 42460865, 12374961,
-  100, 0, 0, 0,
-  100, 0, 0, 0,
-  99, 0, 0, 0,
-  0, 0, 0, 0,
-  0, 0, 0, 0,
-  0, 0, 0, 0
+  3857263, 8103718, 42460865, 12374961, # S
+  100, 0, 0, 0, # E
+  100, 0, 0, 0, # Is
+  99, 0, 0, 0, # Ia
+  0, 0, 0, 0, # R
+  0, 0, 0, 0, # new infections
+  0, 0, 0, 0 # reinfections
 )
 init_vax1 <- matrix(0, nrow = 4, ncol = 7)
 init_vax2 <- init_vax1
@@ -95,7 +95,8 @@ data <- as.data.frame(
   deSolve::lsoda(init_mat, times, norovirus_model_r, params)
 )
 
-plot(rowSums(data[, seq(6, 9)]), type = "l")
+plot(rowSums(data[, seq(6, 9) + 28]), type = "l")
+lines(rowSums(data[, seq(6, 9) + (28 * 2)]), type = "l", col = 2)
 ```
 
 <img src="man/figures/README-unnamed-chunk-4-1.png" width="100%" />
@@ -134,10 +135,10 @@ microbenchmark::microbenchmark(
 #> Warning in microbenchmark::microbenchmark(noromod_r = deSolve::lsoda(init_mat,
 #> : less accurate nanosecond times to avoid potential integer overflows
 #> Unit: milliseconds
-#>               expr        min         lq       mean     median         uq
-#>          noromod_r 2217.15663 2241.59493 2439.77148 2395.27029 2651.38078
-#>  noromod_cpp_boost   69.75482   70.03936   81.33899   75.02112   89.77508
+#>               expr        min         lq       mean    median        uq
+#>          noromod_r 2549.44732 2949.63459 2965.69362 2995.5206 3119.3767
+#>  noromod_cpp_boost   77.36958   82.89552   99.53861  101.5221  110.9312
 #>        max neval
-#>  2750.3396    10
-#>   111.0435    10
+#>  3184.7217    10
+#>   123.9466    10
 ```
