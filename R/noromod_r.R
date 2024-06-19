@@ -76,15 +76,28 @@ norovirus_model_r <- function(t, state, parameters) {
   psi <- parameters[["psi"]]
   gamma <- parameters[["gamma"]]
   aging <- parameters[["aging"]]
+  vacc_start <- parameters[["vacc_start"]]
 
   # vaccination rates
-  phi_1 <- parameters[["phi_1"]]
-  phi_2 <- parameters[["phi_2"]]
+  # phi_1 <- parameters[["phi_1"]]
+  # phi_2 <- parameters[["phi_2"]]
+  # 
+  # # waning rates
+  # upsilon_1 <- parameters[["upsilon"]][1]
+  # upsilon_2 <- parameters[["upsilon"]][2]
 
-  # waning rates
-  upsilon_1 <- parameters[["upsilon"]][1]
-  upsilon_2 <- parameters[["upsilon"]][2]
-
+  if (t > vacc_start) {
+    phi_1 <- parameters[["phi_1"]]
+    phi_2 <- parameters[["phi_2"]]
+    upsilon_1 <- parameters[["upsilon"]][1]
+    upsilon_2 <- parameters[["upsilon"]][2]
+  } else {
+    phi_1 <- 0
+    phi_2 <- 0
+    upsilon_1 <- 0
+    upsilon_2 <- 0
+  }
+  
   # contact matrix
   cm <- parameters[["contacts"]]
 
