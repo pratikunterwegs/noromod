@@ -36,7 +36,8 @@ default_parameters <- function() {
     psi = 1 / 2,
     gamma = 1 / 10,
     n_age_groups = 4,
-    aging = aging / 365
+    aging = aging / 365,
+    vacc_start = 9000
   )
 
   params
