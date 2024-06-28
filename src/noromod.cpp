@@ -105,6 +105,20 @@ struct norovirus_model {
     dxdt.resize(x.rows(), x.cols());
     dxdt.fill(0.0);
 
+    // Prepare vaccination-related parameters based on time `t`
+    double phi_1, phi_2, upsilon_1, upsilon_2;
+    if (t > vacc_start) {
+      phi_1 = parameters["phi_1"];
+      phi_2 = parameters["phi_2"];
+      upsilon_1 = parameters ;
+      upsilon_2 = parameters ;
+    } else {
+      phi_1 = 0.0;
+      phi_2 = 0.0;
+      upsilon_1 = 0.0;
+      upsilon_2 = 0.0;
+    }
+    
     // prepare w2_current, initially first value
     double w2_current = w2_values[0] / 100.0;
     // expect that intervals sequences are in order
