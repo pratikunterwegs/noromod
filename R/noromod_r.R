@@ -61,6 +61,7 @@ norovirus_model_r <- function(t, state, parameters) {
   delta <- 1 / (parameters[["D_immun"]] * 365)
   w1 <- (parameters[["season_amp"]] / 100)
   w2_values <- (parameters[["season_offset"]] / 100)
+  w3 <- (parameters[["season_amp_over65"]])
   q1 <- exp(parameters[["probT_under5"]])
   q2 <- exp(parameters[["probT_over5"]])
   q <- c(q1, q2, q2, q2)
@@ -121,6 +122,10 @@ norovirus_model_r <- function(t, state, parameters) {
     )
   )
 
+  # apply seperate infection potential to the 4th age group
+  infection_potential[4] <- infection_potential[4] * w3
+  
+  
   # calculate new infections by vax status
   new_infections <- susceptible * infection_potential
   new_infections_v1 <- vax_1 * infection_potential
