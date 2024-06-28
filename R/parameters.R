@@ -21,6 +21,7 @@ default_parameters <- function() {
     upsilon = upsilon,
     rho = 0.05,
     season_amp = 3.6,
+    season_amp_over65 = 1.8,
     season_offset = c(5.76, 0, 0, 0, 0, 0, 0),
     # NOTE: only need change points, i.e., final values of each season
     # season_change_points = c(8580, 8944, 9315, 9679, 10043, 10407, 10771),
