@@ -36,7 +36,7 @@ struct norovirus_model {
   double sigma_v0 = 0.0, sigma_v1 = sigma_v0, sigma_v2 = sigma_v1;
   double upsilon_1 = 0.0, upsilon_2 = 0.0;
   const double epsilon, psi, gamma;
-  double delta, w1, q1, q2;
+  double delta, w1, w3, q1, q2;
   const std::vector<double> w2_values, season_change_points;
   Eigen::MatrixXd contacts, aging;
   Eigen::ArrayXd param_;
@@ -57,6 +57,7 @@ struct norovirus_model {
         gamma(params["gamma"]),
         delta(params["D_immun"]),
         w1(params["season_amp"]),
+        w3(params["season_amp_over65"]),
         q1(params["probT_under5"]),
         q2(params["probT_over5"]),
         w2_values(Rcpp::as<std::vector<double> >(params["season_offset"])),
@@ -130,6 +131,11 @@ struct norovirus_model {
          (x(Eigen::all, std::array<long, 3>{3, 10, 17}) * rho))
             .rowwise()
             .sum();
+         
+         
+    // Adjust the 4th age group (index 3) by multiplying it by w3
+   infected[3] *= w3;
+         
     // return an array of infection potential
     auto infection_potential =
         transmission_rates * (contacts * infected).array();
