@@ -35,7 +35,7 @@ struct norovirus_model {
   Rcpp::NumericVector upsilon, sigma;
   double sigma_v0 = 0.0, sigma_v1 = sigma_v0, sigma_v2 = sigma_v1;
   double upsilon_1 = 0.0, upsilon_2 = 0.0;
-  const double epsilon, psi, gamma;
+  const double epsilon, psi, gamma, vacc_start;
   double delta, w1, w3, q1, q2;
   const std::vector<double> w2_values, season_change_points;
   Eigen::MatrixXd contacts, aging;
@@ -60,6 +60,7 @@ struct norovirus_model {
         w3(params["season_amp_over65"]),
         q1(params["probT_under5"]),
         q2(params["probT_over5"]),
+        vacc_start(params["vacc_start"]),
         w2_values(Rcpp::as<std::vector<double> >(params["season_offset"])),
         season_change_points(
             Rcpp::as<std::vector<double> >(params["season_change_points"])),
@@ -107,11 +108,11 @@ struct norovirus_model {
 
     // Prepare vaccination-related parameters based on time `t`
     double phi_1, phi_2, upsilon_1, upsilon_2;
-    if (t > vacc_start) {
-      phi_1 = parameters["phi_1"];
-      phi_2 = parameters["phi_2"];
-      upsilon_1 = parameters ;
-      upsilon_2 = parameters ;
+    if (t > params["vacc_start"]) {
+      phi_1 = params["phi_1"];
+      phi_2 = params["phi_2"];
+      upsilon_1 = params["upsilon_1"] ;
+      upsilon_2 = params["upsilon_2"] ;
     } else {
       phi_1 = 0.0;
       phi_2 = 0.0;
