@@ -9,17 +9,26 @@ default_parameters <- function() {
   aging[row(aging) - col(aging) == 1] <- 1 / utils::head(da, -1)
   # No ageing in last group - flow out via mortality rate
 
+  upsilon <- c(0, 0)
+  upsilon <- 1 / (upsilon * 365)
+  upsilon[is.infinite(upsilon)] <- 0.0
+
   params <- list(
     contacts = matrix(1),
-    sigma = 0.72,
-    rho = 0.070,
-    season_amp = 7.45,
-    season_offset = c(0.8, 0.1, 10, 0.8, 0.1, 0.1, 10),
+    sigma = c(0.82, 0.41, 0.41),
+    phi_1 = c(0, 0, 0, 0), # vector, one value per age group
+    phi_2 = c(0, 0, 0, 0),
+    upsilon = upsilon,
+    rho = 0.05,
+    season_amp = 3.6,
+    season_amp_over65 = 1.8,
+    season_offset = c(5.76, 0, 0, 0, 0, 0, 0),
     # NOTE: only need change points, i.e., final values of each season
-    season_change_points = c(8580, 8944, 9315, 9679, 10043, 10407, 10771),
-    D_immun = 6.8,
-    probT_under5 = log(0.18),
-    probT_over5 = log(0.036),
+    # season_change_points = c(8580, 8944, 9315, 9679, 10043, 10407, 10771),
+    season_change_points = c(11000, 0, 0, 0, 0, 0, 0),
+    D_immun = 4.4,
+    probT_under5 = log(0.195),
+    probT_over5 = log(0.039),
     b = (11.4 / 1000) / 365,
     # background mortality must be a vector for C++ implementations
     # NOTE: this is not age-related mortality
@@ -28,7 +37,8 @@ default_parameters <- function() {
     psi = 1 / 2,
     gamma = 1 / 10,
     n_age_groups = 4,
-    aging = aging / 365
+    aging = aging / 365,
+    vacc_start = 9000
   )
 
   params
