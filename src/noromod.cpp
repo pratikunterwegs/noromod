@@ -56,6 +56,7 @@ Rcpp::List norovirus_model_cpp(const double &t,
   // modify parameters
   const double delta = 1.0 / (Rcpp::as<double>(parameters["D_immun"]) * 365.0);
   const double w1 = Rcpp::as<double>(parameters["season_amp"]) / 100.0;
+  const double w3 = Rcpp::as<double>(parameters["season_amp_over65"]);
   const Rcpp::NumericVector w2_values = parameters["season_offset"];
   // std::exp operates after conversion to STL double
   const double q1 = std::exp(Rcpp::as<double>(parameters["probT_under5"]));
@@ -99,6 +100,9 @@ Rcpp::List norovirus_model_cpp(const double &t,
       param_ * seasonal_term * state_matrix.col(0).array() *
       (contacts * (state_matrix.col(2) + (state_matrix.col(3) * rho))).array();
 
+  // Modify sToE for the 4th age group using w3
+  sToE(3) *= w3;    
+  
   // calculate re-infections
   // recovered are column index 4 of the initial conditions
   Eigen::ArrayXd rToIa =
@@ -142,7 +146,7 @@ struct norovirus_model {
   const double rho, b;
   Eigen::ArrayXd d;
   const double sigma, epsilon, psi, gamma;
-  double delta, w1, q1, q2;
+  double delta, w1, w3, q1, q2;
   const std::vector<double> w2_values, season_change_points;
   Eigen::MatrixXd contacts, aging;
   Eigen::ArrayXd param_;
@@ -157,6 +161,7 @@ struct norovirus_model {
         gamma(params["gamma"]),
         delta(params["D_immun"]),
         w1(params["season_amp"]),
+        w3(params["season_amp_over65"]),
         q1(params["probT_under5"]),
         q2(params["probT_over5"]),
         w2_values(Rcpp::as<std::vector<double> >(params["season_offset"])),
@@ -207,6 +212,9 @@ struct norovirus_model {
         (contacts * (state_matrix.col(2) + (state_matrix.col(3) * rho)))
             .array();
 
+    // Modify sToE for the 4th age group using w3
+    sToE(3) *= w3;    
+        
     // calculate re-infections
     // recovered are column index 4 of the initial conditions
     Eigen::ArrayXd rToIa =
