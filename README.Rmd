@@ -15,11 +15,7 @@ knitr::opts_chunk$set(
 
 # noromod
 
-<!-- badges: start -->
-[![R-CMD-check](https://github.com/pratikunterwegs/noromod/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/pratikunterwegs/noromod/actions/workflows/R-CMD-check.yaml)
-<!-- badges: end -->
-
-The goal of noromod is to provide a three implementations of a model of age-stratified norovirus transmission.
+The _noromod_ package implements a model of age-stratified norovirus transmission.
 
 ## Installation
 
