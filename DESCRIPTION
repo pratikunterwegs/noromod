@@ -1,31 +1,35 @@
 Package: noromod
 Title: Model a Norovirus Epidemic with Age Structure and Seasonal Forcing
 Version: 0.0.0.9000
-Authors@R: 
-    person("Pratik", "Gupte", , "pratik.gupte@lshtm.ac.uk", role = c("aut", "cre"),
-           comment = c(ORCID = "0000-0001-5294-7819"))
-Description: Models a norovirus epidemic with age structure and seasonal forcing.
+Authors@R: c(
+    person("Pratik", "Gupte", , "p.gupte24@imperial.ac.uk", role = c("aut", "cre", "cph"),
+           comment = c(ORCID = "0000-0001-5294-7819")),
+    person("Hikaru", "Bolt", , "pratik.gupte@lshtm.ac.uk", role = c("aut", "cph"),
+           comment = c(ORCID = "0000-0001-9277-4852"))
+  )
+Description: Models a norovirus epidemic with age structure and seasonal
+    forcing.
 License: MIT + file LICENSE
-Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
 URL: https://github.com/pratikunterwegs/noromod
 BugReports: https://github.com/pratikunterwegs/noromod/issues
-LinkingTo: 
-    Rcpp,
-    RcppEigen,
-    epidemics,
-    BH
 Imports:
     Rcpp,
     RcppEigen,
     utils
 Suggests: 
-    testthat (>= 3.0.0),
     deSolve,
     graphics,
     microbenchmark,
-    socialmixr
+    socialmixr,
+    testthat (>= 3.0.0)
+LinkingTo: 
+    BH,
+    epidemics,
+    Rcpp,
+    RcppEigen
 Remotes:
     epiverse-trace/epidemics
 Config/testthat/edition: 3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
