@@ -111,9 +111,9 @@ microbenchmark::microbenchmark(
 #> less accurate nanosecond times to avoid potential integer overflows
 #> Unit: milliseconds
 #>               expr       min        lq      mean    median        uq       max
-#>          noromod_r 509.45862 535.52380 583.92474 558.94925 609.58123 765.98931
-#>        noromod_cpp 149.43655 157.28375 175.55974 164.99763 186.11382 280.39728
-#>  noromod_cpp_boost  26.99424  27.67147  30.90415  28.67552  31.43515  53.90151
+#>          noromod_r 518.46415 529.22148 575.55364 545.39059 624.63110 738.86084
+#>        noromod_cpp 149.41704 154.76899 168.73388 159.16751 170.50311 283.83578
+#>  noromod_cpp_boost  27.00166  27.32644  29.63176  27.67916  29.87814  56.33958
 #>  neval
 #>    100
 #>    100
